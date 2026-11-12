@@ -170,7 +170,12 @@
   margin-top: 6px;
 }
 
+.spreads[data-priced] {
+  margin-top: 16px;
+}
+
 .spreadOption {
+  position: relative;
   display: grid;
   justify-items: center;
   align-content: start;
@@ -217,10 +222,210 @@
   line-height: 1.35;
   color: var(--text-muted);
 }
+.spreadCards {
+  margin-top: -3px;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+.spreadPrice {
+  margin-top: 3px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.spreadPrice[data-free] {
+  color: var(--accent-text);
+}
+.spreadBadge {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 1px 9px;
+  border: 1px solid var(--chip-on-line);
+  border-radius: 999px;
+  background: var(--bg-raised);
+  color: var(--accent-text);
+  font-size: 0.74rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
 .spreadNote {
   display: none;
   font-size: 0.9rem;
   color: var(--text-muted);
+}
+.priceNote {
+  max-width: 62ch;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ================= напоминание о неоконченном раскладе ================= */
+
+.resume {
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-bottom: clamp(18px, 3vw, 28px);
+  padding: 14px 18px;
+  border: 1px solid var(--chip-on-line);
+  border-radius: var(--radius);
+  background: var(--chip-on-bg);
+  color: var(--text);
+  font-size: 0.97rem;
+  line-height: 1.5;
+}
+.resume p {
+  flex: 1 1 280px;
+}
+.resumeQuestion {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.08rem;
+}
+.resumeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ================= оплата ================= */
+
+.paywall {
+  width: 100%;
+  max-width: 600px;
+  margin: clamp(30px, 4.5vw, 48px) auto 0;
+  padding: clamp(24px, 4vw, 36px) clamp(20px, 4vw, 40px);
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  background: var(--bg-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  box-shadow: 0 24px 60px -36px rgba(0, 0, 0, 0.6);
+}
+.paywallEyebrow {
+  font-size: 0.86rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+.paywallTitle {
+  margin-top: 6px;
+  font-size: clamp(1.7rem, 3.4vw, 2.2rem);
+}
+.paywallLead {
+  margin-top: 10px;
+  max-width: 46ch;
+  font-size: 1.06rem;
+  line-height: 1.6;
+}
+.paywallList {
+  list-style: none;
+  padding: 0;
+  margin-top: 16px;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  font-size: 0.97rem;
+  line-height: 1.5;
+}
+.paywallList li {
+  position: relative;
+  padding-left: 22px;
+}
+.paywallList li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0.62em;
+  width: 7px;
+  height: 7px;
+  transform: rotate(45deg);
+  background: var(--accent);
+}
+.paywallNotice {
+  margin-top: 18px;
+  max-width: 46ch;
+  padding: 10px 14px;
+  border-left: 2px solid var(--accent);
+  background: var(--chip-on-bg);
+  border-radius: var(--radius);
+  text-align: left;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.payButton {
+  margin-top: 22px;
+  min-width: 280px;
+  min-height: 56px;
+  font-size: 1.08rem;
+}
+.payMeta {
+  margin-top: 8px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.payMeta + .payMeta {
+  margin-top: 2px;
+}
+.payTest {
+  margin-top: 10px;
+  padding: 3px 10px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.payFree {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  width: 100%;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+.payAlt {
+  margin-top: 4px;
+  min-height: 40px;
+  font-size: 0.92rem;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 0.25em;
+}
+.payAlt:hover {
+  text-decoration-color: var(--text);
+}
+
+.retry {
+  margin-top: 26px;
+  padding: 16px 18px;
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  border: 1px solid var(--chip-on-line);
+  border-radius: var(--radius);
+  background: var(--chip-on-bg);
+  line-height: 1.5;
+}
+.retryActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.retryError {
+  font-size: 0.93rem;
+  padding-left: 10px;
+  border-left: 2px solid var(--accent);
 }
 
 .cta {
@@ -801,6 +1006,58 @@
   .keywords,
   .dialogLinks {
     justify-content: center;
+  }
+}
+
+/* с ценами расклады на телефоне идут списком: схема — название — цена */
+@media (max-width: 560px) {
+  .spreads[data-priced] {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .spreads[data-priced] .spreadOption {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "glyph name price"
+      "glyph cards price";
+    justify-items: start;
+    align-items: center;
+    column-gap: 14px;
+    row-gap: 1px;
+    padding: 11px 14px;
+    text-align: left;
+  }
+  .spreads[data-priced] .glyph {
+    grid-area: glyph;
+    height: 30px;
+    margin: 0;
+  }
+  .spreads[data-priced] .spreadName {
+    grid-area: name;
+  }
+  .spreads[data-priced] .spreadCards {
+    grid-area: cards;
+    margin-top: 0;
+  }
+  .spreads[data-priced] .spreadPrice {
+    grid-area: price;
+    margin-top: 0;
+  }
+  .spreads[data-priced] .spreadSummary {
+    display: none;
+  }
+  .spreads[data-priced] .spreadBadge {
+    left: auto;
+    right: 12px;
+    transform: translateY(-50%);
+  }
+  .spreads[data-priced] ~ .spreadNote {
+    display: block;
+    margin-top: -4px;
+  }
+  .payButton {
+    width: 100%;
+    min-width: 0;
   }
 }
 

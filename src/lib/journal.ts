@@ -14,6 +14,8 @@ export interface JournalEntry {
   text: string;
   /** личные мысли посетителя после расклада */
   note?: string;
+  /** оплаченный расклад: номер заказа и сумма — пригодятся, если придётся разбираться с оплатой */
+  payment?: { orderId: string; amount: number };
 }
 
 const KEY = "tarot.journal.v1";

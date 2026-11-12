@@ -1,32 +1,67 @@
 "use client";
 
-// Стол расклада: вопрос → перемешивание → выбор карт из веера → переворот → трактовка.
+// Стол расклада: вопрос → перемешивание → выбор карт из веера → переворот → [оплата] → трактовка.
+// Платный расклад останавливается после переворота: карты и их значения видны, персональная трактовка — после
+// оплаты. Перед уходом на страницу оплаты расклад сохраняется в браузере (lib/payments/client), а по возвращении
+// (/?oplata=<заказ>) стол восстанавливается и трактовка запрашивается с подтверждением оплаты.
 
 import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DrawnCard, LiteCard } from "@/data/types";
-import { SPREADS, cardsWord, type SpreadId } from "@/data/spreads";
+import { SPREADS, SPREAD_LIST, cardsWord, type SpreadId } from "@/data/spreads";
 import type { TopicId } from "@/data/topics";
+import { FEATURED_SPREAD, FREE_PER_DAY, FREE_SPREAD, PRICES, formatRub, priceOf, type PaymentsInfo } from "@/config/pricing";
 import { pickRandomIndexes, shuffleDeck } from "@/lib/deck";
 import { addJournalEntry, newEntryId } from "@/lib/journal";
+import {
+  FREE_KEY,
+  exhaustFreeReadings,
+  findPending,
+  freeLeftToday,
+  refundFreeReading,
+  removePending,
+  resumablePending,
+  savePending,
+  spendFreeReading,
+  type PendingReading,
+} from "@/lib/payments/client";
 import type { ReadingEvent } from "@/lib/reading-protocol";
 import { toPlainText } from "./markdown-lite";
 import { DeckStack } from "./DeckStack";
 import { Fan } from "./Fan";
 import { SpreadView } from "./SpreadView";
 import { QuestionForm } from "./QuestionForm";
-import { Interpretation } from "./Interpretation";
+import { Interpretation, type ReleaseState } from "./Interpretation";
+import { Paywall, type PayState } from "./Paywall";
 import { CardDialog } from "./CardDialog";
 import styles from "./reading.module.css";
 
-type Phase = "ask" | "shuffle" | "pick" | "reveal" | "read";
+type Phase = "ask" | "shuffle" | "pick" | "reveal" | "pay" | "read";
 type Status = "idle" | "streaming" | "done" | "error";
 
 interface Session {
   question: string;
   topicId: TopicId | null;
   spreadId: SpreadId;
+  /** цена трактовки в рублях; 0 — бесплатно */
+  price: number;
+  /** расклад тратит бесплатную подсказку на сегодня */
+  free: boolean;
+  /** номер заказа, если дошло до оплаты */
+  orderId?: string;
+  /** подтверждение оплаты — с ним сервер откроет трактовку */
+  proof?: string;
 }
+
+const EMPTY_SESSION: Session = { question: "", topicId: null, spreadId: FEATURED_SPREAD, price: 0, free: false };
+
+/** Оплаченный расклад пишется в дневник под одним номером — повторная трактовка заменит запись, а не добавит новую. */
+const paidEntryId = (orderId: string) => `paid-${orderId}`;
+
+const RETURN_MESSAGES: Record<string, string> = {
+  canceled: "Оплата не завершена. Карты сохранены — вернитесь к оплате, когда будете готовы.",
+  failed: "Банк не подтвердил платёж, деньги не списаны. Карты сохранены — попробуйте ещё раз.",
+};
 
 async function readEvents(body: ReadableStream<Uint8Array>, onEvent: (e: ReadingEvent) => void) {
   const reader = body.getReader();
@@ -47,13 +82,29 @@ async function readEvents(body: ReadableStream<Uint8Array>, onEvent: (e: Reading
   if (rest) onEvent(JSON.parse(rest) as ReadingEvent);
 }
 
-export function ReadingTable({ deck }: { deck: LiteCard[] }) {
+export function ReadingTable({ deck, payments }: { deck: LiteCard[]; payments: PaymentsInfo }) {
   const reduce = useReducedMotion() ?? false;
 
   const [phase, setPhase] = useState<Phase>("ask");
   const [question, setQuestion] = useState("");
   const [topicId, setTopicId] = useState<TopicId | null>(null);
-  const [spreadId, setSpreadId] = useState<SpreadId>("three");
+  const [spreadId, setSpreadId] = useState<SpreadId>(FEATURED_SPREAD);
+
+  /** бесплатных подсказок на сегодня; до чтения хранилища считаем, что подсказка есть */
+  const [freeLeft, setFreeLeft] = useState(FREE_PER_DAY);
+  const [payState, setPayState] = useState<PayState>({ status: "idle" });
+  const [payNotice, setPayNotice] = useState<string | null>(null);
+  /** оплаченная трактовка не пришла — её можно запросить снова */
+  const [retryable, setRetryable] = useState(false);
+  /** строка об оплате над трактовкой: заблокировано, оплачено, списано */
+  const [paymentNote, setPaymentNote] = useState<string | null>(null);
+  /** оплата картой: сумма пока только заблокирована */
+  const [held, setHeld] = useState(false);
+  /** отказ от трактовки, которая не пришла: снять блокировку или вернуть деньги */
+  const [release, setRelease] = useState<ReleaseState>({ status: "idle" });
+  /** расклад, который ждёт оплаты или трактовки, — напоминание над формой */
+  const [resume, setResume] = useState<PendingReading | null>(null);
+  const [lostNote, setLostNote] = useState<string | null>(null);
 
   const [order, setOrder] = useState<DrawnCard[]>([]);
   const [picked, setPicked] = useState<number[]>([]);
@@ -77,11 +128,15 @@ export function ReadingTable({ deck }: { deck: LiteCard[] }) {
   const abortRef = useRef<AbortController | null>(null);
   const textRef = useRef("");
   const frameRef = useRef(0);
-  const sessionRef = useRef<Session>({ question: "", topicId: null, spreadId: "three" });
+  const sessionRef = useRef<Session>(EMPTY_SESSION);
 
   const spread = SPREADS[spreadId];
   const need = spread.positions.length;
   const remaining = need - picked.length;
+  const prices = Object.fromEntries(SPREAD_LIST.map((s) => [s.id, priceOf(s.id, payments, freeLeft)])) as Record<
+    SpreadId,
+    number
+  >;
 
   const later = useCallback((fn: () => void, ms: number) => {
     timers.current.push(window.setTimeout(fn, ms));
@@ -135,11 +190,38 @@ export function ReadingTable({ deck }: { deck: LiteCard[] }) {
     setSaved(false);
     setActiveSlot(null);
     setDialogSlot(null);
+    setPayState({ status: "idle" });
+    setPayNotice(null);
+    setRetryable(false);
+    setPaymentNote(null);
+    setHeld(false);
+    setRelease({ status: "idle" });
   }
 
-  function start() {
+  /** Бросаем неоплаченный заказ текущего расклада: посетитель передумал и начал заново. */
+  function dropUnpaidOrder() {
+    const s = sessionRef.current;
+    if (s.orderId && !s.proof) removePending(s.orderId);
+  }
+
+  function start(spreadOverride?: SpreadId) {
+    const chosen = spreadOverride ?? spreadId;
+    dropUnpaidOrder();
     resetSession();
-    sessionRef.current = { question: question.trim(), topicId, spreadId };
+    setResume(null);
+    setLostNote(null);
+    // лимит перечитываем из хранилища: подсказку могли взять в другой вкладке
+    const left = freeLeftToday();
+    setFreeLeft(left);
+    const price = priceOf(chosen, payments, left);
+    sessionRef.current = {
+      question: question.trim(),
+      topicId,
+      spreadId: chosen,
+      price,
+      free: payments.enabled && price === 0 && chosen === FREE_SPREAD,
+    };
+    if (spreadOverride) setSpreadId(spreadOverride);
     setOrder(shuffleDeck());
     setPhase("shuffle");
     if ((tableRef.current?.getBoundingClientRect().top ?? 0) < 0) scrollToTable();
@@ -147,9 +229,205 @@ export function ReadingTable({ deck }: { deck: LiteCard[] }) {
   }
 
   function newReading() {
+    dropUnpaidOrder();
     resetSession();
+    sessionRef.current = EMPTY_SESSION;
     setPhase("ask");
+    setResume(resumablePending());
     requestAnimationFrame(scrollToTable);
+  }
+
+  /** Восстанавливает расклад, сохранённый перед оплатой: карты сразу открыты. */
+  function restore(p: PendingReading, message: string | null) {
+    resetSession();
+    setResume(null);
+    setLostNote(null);
+    sessionRef.current = {
+      question: p.question,
+      topicId: p.topicId,
+      spreadId: p.spreadId,
+      price: p.amount,
+      free: false,
+      orderId: p.orderId,
+      proof: p.proof,
+    };
+    setQuestion(p.question);
+    setTopicId(p.topicId);
+    setSpreadId(p.spreadId);
+    setOrder(p.cards);
+    setPicked(p.cards.map((_, i) => i));
+    setRevealed(p.cards.length);
+    if (p.proof) {
+      // строку об оплате пришлёт сервер первым событием: «заблокировано» или «оплачено»
+      setPhase("read");
+      void requestReading(p.cards, p.proof);
+    } else {
+      setPayNotice(message);
+      setPhase("pay");
+    }
+    requestAnimationFrame(scrollToTable);
+  }
+
+  // бесплатный лимит меняется и в других вкладках, и с наступлением нового дня — сверяемся
+  useEffect(() => {
+    const sync = () => setFreeLeft(freeLeftToday());
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === null || e.key === FREE_KEY) sync();
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("focus", sync);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", sync);
+    };
+  }, []);
+
+  // при открытии страницы: возвращение со страницы оплаты или напоминание о неоконченном раскладе
+  useEffect(() => {
+    setFreeLeft(freeLeftToday());
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get("oplata");
+    if (!orderId) {
+      setResume(resumablePending());
+      return;
+    }
+    // Откладываем на следующий шаг. При разработке (npm run dev) React для проверки запускает стол дважды:
+    // трактовка, начатая при первом запуске, обрывается при проверочном «закрытии», и страница зависала
+    // на «Карты складываются в историю…». Отложенный запуск отменяется вместе с первым и выполняется один раз.
+    const timer = window.setTimeout(() => {
+      // убираем служебные параметры из адреса, чтобы обновление страницы не повторяло возврат
+      window.history.replaceState(null, "", window.location.pathname);
+
+      const pending = findPending(orderId);
+      if (!pending) {
+        setLostNote(
+          `Заказ № ${orderId}: расклад сохранён в другом браузере или на другом устройстве. Откройте сайт там, где делали расклад, — трактовка будет ждать.`
+        );
+        return;
+      }
+      const proof = params.get("proof");
+      if (proof) {
+        const paid = { ...pending, proof };
+        savePending(paid);
+        restore(paid, null);
+      } else {
+        restore(pending, RETURN_MESSAGES[params.get("status") ?? ""] ?? RETURN_MESSAGES.canceled);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+    // запускается один раз при открытии страницы
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function pay() {
+    const s = sessionRef.current;
+    const cards = picked.map((i) => order[i]);
+    setPayState({ status: "creating" });
+    setPayNotice(null);
+    try {
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: s.question, topicId: s.topicId, spreadId: s.spreadId, cards }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        orderId?: string;
+        amount?: number;
+        confirmationUrl?: string;
+        error?: string;
+      } | null;
+      if (!res.ok || !data?.orderId || !data.confirmationUrl) {
+        throw new Error(data?.error ?? `Сервер ответил ошибкой ${res.status}. Попробуйте ещё раз.`);
+      }
+      const saved = savePending({
+        orderId: data.orderId,
+        amount: data.amount ?? s.price,
+        question: s.question,
+        topicId: s.topicId,
+        spreadId: s.spreadId,
+        cards,
+        createdAt: new Date().toISOString(),
+      });
+      if (!saved) {
+        throw new Error("Браузер не дал сохранить расклад перед оплатой. Разрешите сайту хранить данные и попробуйте снова.");
+      }
+      dropUnpaidOrder();
+      sessionRef.current = { ...s, orderId: data.orderId };
+      window.location.assign(data.confirmationUrl);
+    } catch (err) {
+      setPayState({
+        status: "error",
+        message:
+          err instanceof TypeError
+            ? "Нет связи с сервером. Проверьте интернет и попробуйте ещё раз."
+            : err instanceof Error
+              ? err.message
+              : "Не удалось перейти к оплате.",
+      });
+    }
+  }
+
+  /** Повтор оплаченной трактовки — по тому же подтверждению оплаты. */
+  function retryPaid() {
+    const s = sessionRef.current;
+    if (!s.proof) return;
+    abortRef.current?.abort();
+    cancelAnimationFrame(frameRef.current);
+    frameRef.current = 0;
+    textRef.current = "";
+    setText("");
+    setNotices([]);
+    setMode(null);
+    setSaved(false);
+    setRetryable(false);
+    setRelease({ status: "idle" });
+    void requestReading(
+      picked.map((i) => order[i]),
+      s.proof
+    );
+  }
+
+  /** Посетитель отказался от трактовки, которая не пришла: картой — снимаем блокировку, по СБП — возвращаем деньги. */
+  async function releasePaid() {
+    const s = sessionRef.current;
+    if (!s.proof || !s.orderId) return;
+    setRelease({ status: "working" });
+    try {
+      const res = await fetch("/api/payments/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proof: s.proof }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        result?: "canceled" | "refunded";
+        amount?: number;
+        error?: string;
+      } | null;
+      if (!res.ok || !data?.result) throw new Error(data?.error ?? `Сервер ответил ошибкой ${res.status}. Попробуйте ещё раз.`);
+      removePending(s.orderId);
+      sessionRef.current = { ...s, proof: undefined };
+      const sum = formatRub(data.amount ?? s.price);
+      setRetryable(false);
+      setHeld(false);
+      setPaymentNote(null);
+      setRelease({
+        status: "done",
+        message:
+          data.result === "canceled"
+            ? `Блокировка снята: ${sum} снова доступны на карте. Деньги не списывались.`
+            : `Деньги возвращены: ${sum} придут на счёт, с которого вы платили. Срок зачисления зависит от банка.`,
+      });
+    } catch (err) {
+      setRelease({
+        status: "error",
+        message:
+          err instanceof TypeError
+            ? "Нет связи с сервером. Проверьте интернет и попробуйте ещё раз."
+            : err instanceof Error
+              ? err.message
+              : "Не получилось отменить оплату.",
+      });
+    }
   }
 
   const pick = useCallback(
@@ -174,58 +452,121 @@ export function ReadingTable({ deck }: { deck: LiteCard[] }) {
     if (phase === "pick" && picked.length === need) later(() => setPhase("reveal"), reduce ? 80 : 720);
   }, [phase, picked.length, need, later, reduce]);
 
-  // открываем карты по одной; запрос трактовки уходит сразу, чтобы ожидание совпало с анимацией
+  // открываем карты по одной; бесплатная трактовка запрашивается сразу, чтобы ожидание совпало с анимацией,
+  // платная — после оплаты
   useEffect(() => {
     if (phase !== "reveal") return;
-    void requestReading(picked.map((i) => order[i]));
+    const paidSpread = sessionRef.current.price > 0;
+    if (!paidSpread) void requestReading(picked.map((i) => order[i]));
     const step = reduce ? 0 : need > 3 ? 320 : 560;
     const first = reduce ? 0 : 280;
     for (let k = 0; k < need; k++) later(() => setRevealed(k + 1), first + k * step);
-    later(() => setPhase("read"), first + need * step + (reduce ? 0 : 520));
+    // решаем в момент, когда карты открылись: сервер мог ответить, что бесплатные подсказки на сегодня кончились
+    later(() => {
+      const s = sessionRef.current;
+      setPhase(s.price > 0 && !s.proof ? "pay" : "read");
+    }, first + need * step + (reduce ? 0 : 520));
     // запускается один раз при переходе в фазу открытия
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  // мягко подводим к трактовке, если она ниже экрана
+  // мягко подводим к трактовке или оплате, если они ниже экрана
   useEffect(() => {
-    if (phase !== "read") return;
+    if (phase !== "read" && phase !== "pay") return;
     const el = readingRef.current;
     if (el && el.getBoundingClientRect().top > window.innerHeight * 0.72) {
       el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     }
   }, [phase, reduce]);
 
-  async function requestReading(cards: DrawnCard[]) {
+  async function requestReading(cards: DrawnCard[], proof?: string) {
     const controller = new AbortController();
     abortRef.current = controller;
-    const id = newEntryId();
     const session = sessionRef.current;
+    const id = session.orderId && proof ? paidEntryId(session.orderId) : newEntryId();
     setEntryId(id);
     setStatus("streaming");
+    // бесплатная подсказка засчитывается сразу; вернётся, только если трактовка не придёт по вине сайта
+    const spentFree = session.free;
+    if (spentFree) setFreeLeft(spendFreeReading());
+    let givenBack = false;
+    const giveFreeBack = () => {
+      if (!spentFree || givenBack) return;
+      givenBack = true;
+      setFreeLeft(refundFreeReading());
+      setNotices((n) => [...n, "Подсказка не засчитана: бесплатная попытка на сегодня осталась."]);
+    };
 
     try {
       const res = await fetch("/api/reading", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...session, cards }),
+        body: JSON.stringify({
+          question: session.question,
+          topicId: session.topicId,
+          spreadId: session.spreadId,
+          cards,
+          payment: proof,
+        }),
         signal: controller.signal,
       });
+      if (res.status === 402) {
+        const data = (await res.json().catch(() => null)) as { error?: string; code?: string } | null;
+        if (data?.code === "free_limit") {
+          // сервер видит, что бесплатные подсказки с этого адреса на сегодня кончились: подсказка становится платной
+          setFreeLeft(exhaustFreeReadings());
+          sessionRef.current = { ...session, price: PRICES[session.spreadId], free: false };
+        } else {
+          // оплата не подтвердилась — старое подтверждение больше не годится
+          if (session.orderId) {
+            const p = findPending(session.orderId);
+            if (p) savePending({ ...p, proof: undefined });
+          }
+          sessionRef.current = { ...session, proof: undefined };
+        }
+        setStatus("idle");
+        setNotices([]);
+        setPayNotice(data?.error ?? "Не удалось подтвердить оплату. Попробуйте оплатить ещё раз.");
+        // если карты ещё открываются, к экрану оплаты переключит таймер открытия — не обрываем анимацию
+        setPhase((p) => (p === "reveal" ? p : "pay"));
+        return;
+      }
       if (!res.ok || !res.body) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(data?.error ?? `Сервер ответил ошибкой ${res.status}. Попробуйте ещё раз.`);
       }
       let failure: string | null = null;
+      let fellBack = false;
       await readEvents(res.body, (event) => {
         if (event.type === "meta") setMode({ mode: event.mode, detail: event.detail });
         else if (event.type === "text") appendText(event.text);
         else if (event.type === "notice") setNotices((n) => [...n, event.text]);
-        else if (event.type === "error") failure = event.text;
+        else if (event.type === "fallback") {
+          // ИИ не ответил — подсказку возвращаем сразу, даже если посетитель уйдёт, не дочитав базовую трактовку
+          fellBack = true;
+          giveFreeBack();
+        } else if (event.type === "payment") {
+          const sum = formatRub(event.amount);
+          setHeld(event.status === "held");
+          setPaymentNote(
+            event.status === "held"
+              ? `${sum} заблокированы на карте, заказ № ${event.orderId}. Спишем их, когда трактовка будет готова.`
+              : event.status === "captured"
+                ? `Трактовка готова — ${sum} списаны, заказ № ${event.orderId}. Спасибо!`
+                : `Оплата прошла: ${sum}, заказ № ${event.orderId}. Спасибо!`
+          );
+        } else if (event.type === "error") failure = event.text;
       });
       flushText();
       if (failure) throw new Error(failure);
       if (!textRef.current.trim()) throw new Error("Трактовка пришла пустой. Попробуйте сделать расклад ещё раз.");
 
       setStatus("done");
+      if (proof && session.orderId) {
+        // трактовка пришла — расклад больше не ждёт; если ИИ не ответил, оплату можно использовать снова
+        if (fellBack) setRetryable(true);
+        else removePending(session.orderId);
+      }
       setSaved(
         addJournalEntry({
           id,
@@ -235,12 +576,16 @@ export function ReadingTable({ deck }: { deck: LiteCard[] }) {
           spreadId: session.spreadId,
           cards,
           text: textRef.current,
+          ...(proof && session.orderId ? { payment: { orderId: session.orderId, amount: session.price } } : {}),
         })
       );
     } catch (err) {
+      // посетитель сам ушёл посреди ответа — подсказка остаётся засчитанной
       if (controller.signal.aborted) return;
       flushText();
       setStatus("error");
+      giveFreeBack();
+      if (proof) setRetryable(true);
       const message =
         err instanceof TypeError
           ? "Нет связи с сервером. Проверьте интернет и попробуйте ещё раз."
@@ -258,13 +603,20 @@ export function ReadingTable({ deck }: { deck: LiteCard[] }) {
       const d = order[fanIndex];
       return `${sp.positions[k].title}: ${deck[d.id].name}${d.reversed ? " (перевёрнутая)" : ""}`;
     });
-    return [s.question ? `Вопрос: ${s.question}` : "Общий расклад", `Расклад: ${sp.name}`, ...cards, "", toPlainText(textRef.current)].join(
-      "\n"
-    );
+    return [
+      s.question ? `Вопрос: ${s.question}` : "Общий расклад",
+      `Расклад: ${sp.title} (${sp.cardsLabel})`,
+      ...cards,
+      "",
+      toPlainText(textRef.current),
+    ].join("\n");
   };
 
   const dialogDrawn = dialogSlot != null && picked[dialogSlot] != null ? order[picked[dialogSlot]] : null;
   const session = sessionRef.current;
+  const sessionSpread = SPREADS[session.spreadId];
+  const freeAlternative =
+    payments.enabled && session.spreadId !== FREE_SPREAD && priceOf(FREE_SPREAD, payments, freeLeft) === 0;
 
   return (
     <MotionConfig reducedMotion="user">
@@ -281,7 +633,9 @@ export function ReadingTable({ deck }: { deck: LiteCard[] }) {
                 {session.question ? `«${session.question}»` : "Что для меня важно сейчас?"}
               </h1>
               <p className={styles.sessionMeta}>
-                <span>{SPREADS[session.spreadId].name}</span>
+                <span>
+                  {sessionSpread.title} · {sessionSpread.cardsLabel}
+                </span>
                 <button type="button" className={styles.editLink} onClick={newReading}>
                   Изменить вопрос
                 </button>
@@ -289,12 +643,45 @@ export function ReadingTable({ deck }: { deck: LiteCard[] }) {
             </header>
           )}
 
+          {phase === "ask" && (resume || lostNote) && (
+            <div className={styles.resume} role="status">
+              {resume ? (
+                <>
+                  <p>
+                    {resume.proof ? "Оплаченный расклад ждёт трактовку" : "Оплата расклада не завершена, карты сохранены"}
+                    {": "}
+                    <span className={styles.resumeQuestion}>
+                      «{resume.question || "Что для меня важно сейчас?"}»
+                    </span>
+                  </p>
+                  <div className={styles.resumeActions}>
+                    <button type="button" className="btn btn-primary" onClick={() => restore(resume, null)}>
+                      {resume.proof ? "Открыть трактовку" : "Вернуться к раскладу"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-quiet"
+                      onClick={() => {
+                        if (!resume.proof) removePending(resume.orderId);
+                        setResume(null);
+                      }}
+                    >
+                      Скрыть
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p>{lostNote}</p>
+              )}
+            </div>
+          )}
+
           <LayoutGroup>
             <div className={styles.deckZone}>
               <AnimatePresence mode="popLayout" initial={false}>
                 {(phase === "ask" || phase === "shuffle") && (
                   <motion.div key="deck" exit={{ opacity: 0, transition: { duration: 0.2 } }}>
-                    <DeckStack shuffling={phase === "shuffle"} onActivate={phase === "ask" ? start : undefined} />
+                    <DeckStack shuffling={phase === "shuffle"} onActivate={phase === "ask" ? () => start() : undefined} />
                   </motion.div>
                 )}
                 {phase === "pick" && (
@@ -310,10 +697,12 @@ export function ReadingTable({ deck }: { deck: LiteCard[] }) {
                 question={question}
                 topicId={topicId}
                 spreadId={spreadId}
+                payments={payments}
+                prices={prices}
                 onQuestion={setQuestion}
                 onTopic={setTopicId}
                 onSpread={setSpreadId}
-                onSubmit={start}
+                onSubmit={() => start()}
               />
             )}
 
@@ -372,12 +761,27 @@ export function ReadingTable({ deck }: { deck: LiteCard[] }) {
             </p>
           )}
 
+          {phase === "pay" && (
+            <div ref={readingRef} className={styles.readingWrap}>
+              <Paywall
+                spreadId={session.spreadId}
+                amount={session.price}
+                test={payments.test}
+                state={payState}
+                notice={payNotice}
+                freeAlternative={freeAlternative}
+                onPay={() => void pay()}
+                onFree={() => start(FREE_SPREAD)}
+              />
+            </div>
+          )}
+
           {phase === "read" && (
             <div ref={readingRef} className={styles.readingWrap}>
               <Interpretation
                 text={text}
                 status={status}
-                notices={notices}
+                notices={paymentNote ? [paymentNote, ...notices] : notices}
                 mode={mode}
                 cardCount={need}
                 activeSlot={activeSlot}
@@ -386,6 +790,11 @@ export function ReadingTable({ deck }: { deck: LiteCard[] }) {
                 saved={saved}
                 plainText={plainText}
                 onNewReading={newReading}
+                retryable={retryable}
+                onRetry={retryPaid}
+                held={held}
+                release={release}
+                onRelease={() => void releasePaid()}
               />
             </div>
           )}

@@ -18,6 +18,19 @@ interface Props {
   saved: boolean;
   plainText: () => string;
   onNewReading: () => void;
+  /** оплаченная трактовка не пришла — можно запросить снова, бесплатно */
+  retryable: boolean;
+  onRetry: () => void;
+  /** оплата картой: сумма только заблокирована */
+  held: boolean;
+  /** отказ от трактовки: снять блокировку или вернуть деньги */
+  release: ReleaseState;
+  onRelease: () => void;
+}
+
+export interface ReleaseState {
+  status: "idle" | "working" | "done" | "error";
+  message?: string;
 }
 
 const isDev = process.env.NODE_ENV !== "production";
@@ -34,6 +47,11 @@ export function Interpretation({
   saved,
   plainText,
   onNewReading,
+  retryable,
+  onRetry,
+  held,
+  release,
+  onRelease,
 }: Props) {
   const sections = useMemo(() => parseReading(text), [text]);
   const streaming = status === "streaming";
@@ -92,6 +110,34 @@ export function Interpretation({
           <p className="visually-hidden" role="status">
             Трактовка готова
           </p>
+          {release.status === "done" ? (
+            <div className={styles.retry} role="status">
+              <p>{release.message}</p>
+            </div>
+          ) : (
+            retryable && (
+              <div className={styles.retry}>
+                <p>
+                  Персональная трактовка пока не получилась.{" "}
+                  {held ? "Деньги не списаны — сумма только заблокирована." : "Оплата сохранена."} Попробуйте ещё раз — это
+                  бесплатно. Если трактовка больше не нужна, {held ? "отмените оплату" : "верните деньги"}.
+                </p>
+                <div className={styles.retryActions}>
+                  <button type="button" className="btn btn-primary" onClick={onRetry} disabled={release.status === "working"}>
+                    Повторить трактовку
+                  </button>
+                  <button type="button" className="btn btn-quiet" onClick={onRelease} disabled={release.status === "working"}>
+                    {release.status === "working" ? "Отменяем…" : held ? "Отменить оплату" : "Вернуть деньги"}
+                  </button>
+                </div>
+                {release.status === "error" && (
+                  <p className={styles.retryError} role="alert">
+                    {release.message}
+                  </p>
+                )}
+              </div>
+            )
+          )}
           <AfterReading entryId={entryId} saved={saved} plainText={plainText} onNewReading={onNewReading} />
         </>
       )}

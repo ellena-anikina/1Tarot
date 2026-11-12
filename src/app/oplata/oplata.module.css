@@ -1,0 +1,262 @@
+/* Тестовая страница оплаты */
+
+.wrap {
+  display: flex;
+  justify-content: center;
+  padding-block: clamp(28px, 5vw, 64px) clamp(48px, 7vw, 88px);
+}
+
+.checkout {
+  width: 100%;
+  max-width: 520px;
+  display: grid;
+  gap: 16px;
+}
+
+.testBanner {
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  background: var(--chip-on-bg);
+  border-radius: var(--radius);
+  font-size: 0.93rem;
+  line-height: 1.5;
+}
+.testBanner b {
+  font-weight: 600;
+}
+
+.panel {
+  width: 100%;
+  max-width: 520px;
+  padding: clamp(22px, 4vw, 32px);
+  background: var(--bg-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  box-shadow: 0 24px 60px -32px rgba(0, 0, 0, 0.55);
+}
+
+.orderHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.item {
+  font-size: clamp(1.4rem, 3vw, 1.7rem);
+  line-height: 1.2;
+}
+.itemDetail {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.amount {
+  margin-top: 14px;
+  font-family: var(--font-display);
+  font-size: clamp(2.3rem, 6vw, 2.9rem);
+  line-height: 1;
+}
+
+.note {
+  margin-block: 12px 20px;
+  color: var(--text-muted);
+}
+
+.form {
+  display: grid;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.label {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.methods {
+  display: grid;
+  gap: 8px;
+}
+
+.method {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out);
+}
+.method:hover {
+  border-color: var(--text-muted);
+}
+.method:has(input:checked) {
+  background: var(--chip-on-bg);
+  border-color: var(--chip-on-line);
+}
+.method input {
+  margin-top: 4px;
+  accent-color: var(--accent);
+  width: 18px;
+  height: 18px;
+}
+.methodName {
+  display: block;
+  font-weight: 500;
+}
+.methodHint {
+  display: block;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.method:has(input:checked) .methodHint {
+  color: inherit;
+}
+
+.field {
+  display: grid;
+}
+
+.input {
+  min-height: 48px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  transition:
+    border-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out);
+}
+.input::placeholder {
+  color: var(--text-muted);
+}
+.input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--chip-on-bg);
+}
+
+.hint {
+  margin-top: 6px;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.error {
+  padding-left: 12px;
+  border-left: 2px solid var(--accent);
+  font-size: 0.93rem;
+}
+
+.payButton {
+  width: 100%;
+  min-height: 54px;
+  font-size: 1.04rem;
+}
+.payButton + .payButton {
+  margin-top: -8px;
+}
+
+.testTools {
+  padding-top: 14px;
+  border-top: 1px dashed var(--line-strong);
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+.testTools button {
+  min-height: 32px;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 0.2em;
+}
+.testTools button:hover {
+  text-decoration-color: var(--text);
+}
+
+.processing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 26px 0 8px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--accent);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.result {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  margin-top: 24px;
+  outline: none;
+}
+.result p {
+  line-height: 1.55;
+}
+.result .btn {
+  margin-top: 6px;
+}
+
+.resultTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.check {
+  width: 30px;
+  height: 30px;
+  padding: 4px;
+  border-radius: 50%;
+  background: var(--chip-on-bg);
+  color: var(--accent-text);
+  flex: none;
+}
+
+.resultActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+.resultActions .btn {
+  margin-top: 0;
+}

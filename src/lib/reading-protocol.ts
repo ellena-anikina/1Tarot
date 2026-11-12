@@ -21,6 +21,11 @@ export type ReadingEvent =
   | { type: "meta"; mode: "ai" | "demo"; detail?: string }
   | { type: "text"; text: string }
   | { type: "notice"; text: string }
+  /** персональная трактовка не пришла (ИИ не ответил или ответ оборвался): оплаченную можно запросить снова,
+   *  бесплатная подсказка не засчитывается */
+  | { type: "fallback" }
+  /** состояние оплаты: held — сумма заблокирована до трактовки, paid — оплачено, captured — трактовка пришла, сумма списана */
+  | { type: "payment"; status: "held" | "paid" | "captured"; orderId: string; amount: number }
   | { type: "done" }
   | { type: "error"; text: string };
 

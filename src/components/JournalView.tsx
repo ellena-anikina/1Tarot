@@ -83,7 +83,7 @@ function Entry({ entry, deck }: { entry: JournalEntry; deck: LiteCard[] }) {
         </div>
         <div className={styles.entryInfo}>
           <p className={styles.when}>
-            <time dateTime={entry.createdAt}>{formatWhen(entry.createdAt)}</time>, {spread?.name ?? "расклад"}
+            <time dateTime={entry.createdAt}>{formatWhen(entry.createdAt)}</time>, {spread?.title ?? "расклад"}
           </p>
           <h2 className={styles.question}>{entry.question ? `«${entry.question}»` : "Что для меня важно сейчас?"}</h2>
           <p className={styles.cardNames}>

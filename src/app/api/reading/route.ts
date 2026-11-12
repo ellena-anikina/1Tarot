@@ -1,13 +1,16 @@
 // POST /api/reading — трактовка расклада потоком событий (NDJSON).
 // Ключа нет → базовая трактовка. Ключ есть → ответ модели. Если основная модель не ответила —
 // по очереди запасные (AI_*_2, AI_*_3), а если не ответил никто — базовая трактовка.
+// Платный расклад открывается только с подтверждением оплаты именно за него (поле payment, см. lib/payments).
 // При локальной разработке каждый ИИ-расклад пишется в журнал logs/readings.jsonl — для сравнения моделей.
 
+import { capturePayment, checkPayment, isFreeReading } from "@/lib/payments/server";
+import { PRICES, formatRub } from "@/config/pricing";
 import { getAiConfig, type AiReady } from "@/lib/ai/config";
 import { buildSystemPrompt, buildUserPrompt } from "@/lib/ai/prompt";
 import { attemptModel, requestedEffort } from "@/lib/ai/providers";
 import { buildDemoReading, streamDemo } from "@/lib/ai/demo";
-import { allowReading } from "@/lib/ai/rate-limit";
+import { allowFreeReading, allowReading } from "@/lib/ai/rate-limit";
 import { appendReadingLog, describeStats, logAttempt, newReadingLog, type ReadingLogEntry } from "@/lib/ai/reading-log";
 import { parseReadingRequest, type ReadingEvent } from "@/lib/reading-protocol";
 
@@ -54,8 +57,25 @@ export async function POST(request: Request) {
   if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
   const req = parsed.value;
 
+  const payment = checkPayment(req, (body as { payment?: unknown }).payment);
+  if (!payment.ok) return Response.json({ error: payment.error, code: "payment_required" }, { status: 402 });
+  const paidOrder = payment.paid ? payment.order : null;
+  const paid = paidOrder !== null;
+
+  // бесплатная подсказка: запасная проверка по адресу (основной лимит «раз в день» считает браузер)
+  if (!paid && isFreeReading(req.spreadId) && !allowFreeReading(clientKey(request))) {
+    return Response.json(
+      {
+        error: `Бесплатная подсказка на сегодня уже была — следующая завтра. Сейчас подсказка стоит ${formatRub(PRICES[req.spreadId])}.`,
+        code: "free_limit",
+      },
+      { status: 402 },
+    );
+  }
+
   const cfg = getAiConfig();
-  const limited = cfg.mode === "ai" && !allowReading(clientKey(request));
+  // оплаченную трактовку лимит частоты не урезает
+  const limited = cfg.mode === "ai" && !paid && !allowReading(clientKey(request));
 
   const encoder = new TextEncoder();
   const abort = new AbortController();
@@ -71,11 +91,21 @@ export async function POST(request: Request) {
       };
       /** запись этого расклада в журнал для сравнения моделей — только при локальной разработке */
       let log: ReadingLogEntry | null = null;
+      /** трактовка пришла — заблокированную сумму можно списать */
+      const settle = () => {
+        if (!paidOrder?.held) return;
+        capturePayment(paidOrder);
+        send({ type: "payment", status: "captured", orderId: paidOrder.id, amount: paidOrder.amount });
+      };
 
       try {
+        if (paidOrder) {
+          send({ type: "payment", status: paidOrder.held ? "held" : "paid", orderId: paidOrder.id, amount: paidOrder.amount });
+        }
         if (cfg.mode === "demo") {
           send({ type: "meta", mode: "demo", detail: isDev ? cfg.reason : undefined });
           await sendDemo();
+          if (!abort.signal.aborted) settle();
         } else if (limited) {
           send({ type: "meta", mode: "demo" });
           send({
@@ -119,6 +149,7 @@ export async function POST(request: Request) {
                 console.info(`[reading] ${who(model)}: ${stats}`);
                 send({ type: "meta", mode: "ai", detail: `${describeModel(model, i === 0 ? chain.length - 1 : 0)} · ${stats}` });
               }
+              settle();
               showDemo = false;
               break;
             }
@@ -131,8 +162,13 @@ export async function POST(request: Request) {
               if (log) log.outcome = "interrupted";
               send({
                 type: "notice",
-                text: isDev ? `Ответ прервался. ${failure}` : "Ответ прервался. Попробуйте сделать расклад ещё раз чуть позже.",
+                text: isDev
+                  ? `Ответ прервался. ${failure}`
+                  : paid
+                    ? "Ответ прервался. Оплата сохранена — трактовку можно запросить ещё раз, это бесплатно."
+                    : "Ответ прервался. Попробуйте сделать расклад ещё раз чуть позже.",
               });
+              send({ type: "fallback" });
               showDemo = false;
               break;
             }
@@ -145,8 +181,11 @@ export async function POST(request: Request) {
                 type: "notice",
                 text: isDev
                   ? `${failure}. Показана базовая трактовка.`
-                  : "Сейчас не получилось связаться с ИИ, поэтому показана базовая трактовка по значениям карт.",
+                  : paid
+                    ? "ИИ сейчас не ответил, поэтому ниже — базовая трактовка по значениям карт. Оплата сохранена: персональную трактовку можно запросить ещё раз — бесплатно."
+                    : "Сейчас не получилось связаться с ИИ, поэтому показана базовая трактовка по значениям карт.",
               });
+              send({ type: "fallback" });
               break;
             }
 

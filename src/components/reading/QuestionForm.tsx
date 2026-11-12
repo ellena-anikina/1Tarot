@@ -1,8 +1,9 @@
 "use client";
 
 import { useLayoutEffect, useRef, type KeyboardEvent } from "react";
-import { SPREAD_LIST, SPREADS, type SpreadId } from "@/data/spreads";
+import { SPREAD_LIST, SPREADS, cardsWord, type SpreadId } from "@/data/spreads";
 import { TOPICS, type Topic, type TopicId } from "@/data/topics";
+import { FEATURED_SPREAD, FREE_PER_DAY, FREE_SPREAD, formatRub, type PaymentsInfo } from "@/config/pricing";
 import { QUESTION_MAX_LENGTH } from "@/lib/reading-protocol";
 import styles from "./reading.module.css";
 
@@ -10,6 +11,9 @@ interface Props {
   question: string;
   topicId: TopicId | null;
   spreadId: SpreadId;
+  payments: PaymentsInfo;
+  /** цена трактовки каждого расклада прямо сейчас; 0 — бесплатно */
+  prices: Record<SpreadId, number>;
   onQuestion: (q: string) => void;
   onTopic: (t: TopicId | null) => void;
   onSpread: (s: SpreadId) => void;
@@ -18,7 +22,31 @@ interface Props {
 
 const PRESETS = new Set(TOPICS.map((t) => t.question));
 
-export function QuestionForm({ question, topicId, spreadId, onQuestion, onTopic, onSpread, onSubmit }: Props) {
+/** Подпись под выбором расклада: сколько стоит и когда платить. */
+function priceNote(spreadId: SpreadId, price: number): string {
+  const daily = spreadId === FREE_SPREAD && FREE_PER_DAY > 0;
+  if (price === 0) {
+    if (!daily) return "Бесплатно.";
+    const count = FREE_PER_DAY === 1 ? "одна подсказка" : `${FREE_PER_DAY} ${cardsWord(FREE_PER_DAY, ["подсказка", "подсказки", "подсказок"])}`;
+    return `Бесплатно — ${count} в день.`;
+  }
+  if (daily) {
+    return `Бесплатная подсказка на сегодня уже была — следующая завтра. Сейчас — ${formatRub(price)}.`;
+  }
+  return `Колода и значения карт — бесплатно. Персональная трактовка — ${formatRub(price)}, оплата после того, как карты лягут.`;
+}
+
+export function QuestionForm({
+  question,
+  topicId,
+  spreadId,
+  payments,
+  prices,
+  onQuestion,
+  onTopic,
+  onSpread,
+  onSubmit,
+}: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // поле растёт вместе с текстом
@@ -93,7 +121,7 @@ export function QuestionForm({ question, topicId, spreadId, onQuestion, onTopic,
         ))}
       </div>
 
-      <fieldset className={styles.spreads}>
+      <fieldset className={styles.spreads} data-priced={payments.enabled || undefined}>
         <legend className="visually-hidden">Расклад</legend>
         {SPREAD_LIST.map((s) => (
           <label key={s.id} className={styles.spreadOption}>
@@ -105,15 +133,27 @@ export function QuestionForm({ question, topicId, spreadId, onQuestion, onTopic,
               onChange={() => onSpread(s.id)}
               className="visually-hidden"
             />
+            {payments.enabled && s.id === FEATURED_SPREAD && <span className={styles.spreadBadge}>Рекомендуем</span>}
             <SpreadGlyph id={s.id} />
-            <span className={styles.spreadName}>{s.name}</span>
+            <span className={styles.spreadName}>{s.title}</span>
+            <span className={styles.spreadCards}>{s.cardsLabel}</span>
             <span className={styles.spreadSummary}>{s.summary}</span>
+            {payments.enabled && (
+              <span className={styles.spreadPrice} data-free={prices[s.id] === 0 || undefined}>
+                {prices[s.id] === 0 ? "Бесплатно" : formatRub(prices[s.id])}
+              </span>
+            )}
           </label>
         ))}
       </fieldset>
       <p className={styles.spreadNote} aria-live="polite">
         {SPREADS[spreadId].summary}
       </p>
+      {payments.enabled && (
+        <p className={styles.priceNote} aria-live="polite">
+          {priceNote(spreadId, prices[spreadId])}
+        </p>
+      )}
 
       <button type="submit" className={`btn btn-primary ${styles.cta}`}>
         Перемешать колоду

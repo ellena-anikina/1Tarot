@@ -3,8 +3,30 @@ import { ReadingTable } from "@/components/reading/ReadingTable";
 import { JsonLd } from "@/components/JsonLd";
 import { CARDS, LITE_DECK } from "@/data/cards";
 import { getAllPosts, formatDate } from "@/lib/blog";
+import { paymentsInfo } from "@/lib/payments/server";
 import { SITE } from "@/config/site";
+import { FREE_PER_DAY, FREE_SPREAD, PRICES, formatRub } from "@/config/pricing";
+import { SPREADS, SPREAD_LIST } from "@/data/spreads";
 import styles from "./home.module.css";
+
+/** «Сколько стоит?» — собирается из цен в src/config/pricing.ts. */
+function priceAnswer(): string {
+  const paid = SPREAD_LIST.filter((s) => s.id !== FREE_SPREAD || FREE_PER_DAY === 0)
+    .map((s) => `${s.title.toLowerCase()} (${s.cardsLabel}) — ${formatRub(PRICES[s.id])}`)
+    .join(", ");
+  const freeSpread = SPREADS[FREE_SPREAD];
+  const times = FREE_PER_DAY === 1 ? "раз в день" : `${FREE_PER_DAY} раза в день`;
+  const free =
+    FREE_PER_DAY > 0
+      ? `${freeSpread.title} (${freeSpread.cardsLabel}) — бесплатно, ${times}; сверх этого — ${formatRub(PRICES[FREE_SPREAD])}. `
+      : "";
+  return (
+    `${free}${paid.charAt(0).toUpperCase()}${paid.slice(1)}. ` +
+    "Перемешать колоду, вытянуть карты и прочитать их значения можно бесплатно: платите только за персональную трактовку и только после того, как карты лягут. " +
+    "Оплата — через СБП или банковской картой на странице платёжного сервиса, данные карты сайт не видит. " +
+    "Не пришла трактовка — деньги вернутся: её можно бесплатно повторить или отказаться от неё. При оплате картой сумма сначала только блокируется и списывается, когда трактовка готова."
+  );
+}
 
 const FAQ = [
   {
@@ -32,10 +54,12 @@ const FAQ = [
 export default function HomePage() {
   const majors = CARDS.filter((c) => c.arcana === "major");
   const posts = getAllPosts().slice(0, 3);
+  const payments = paymentsInfo();
+  const faq = payments.enabled ? [...FAQ.slice(0, 1), { q: "Сколько это стоит?", a: priceAnswer() }, ...FAQ.slice(1)] : FAQ;
 
   return (
     <>
-      <ReadingTable deck={LITE_DECK} />
+      <ReadingTable deck={LITE_DECK} payments={payments} />
 
       <div className={`page ${styles.below}`}>
         <section className={styles.mirror} aria-labelledby="mirror-title">
@@ -87,7 +111,7 @@ export default function HomePage() {
 
         <section className={styles.faq} aria-labelledby="faq-title">
           <h2 id="faq-title">Частые вопросы</h2>
-          {FAQ.map((item) => (
+          {faq.map((item) => (
             <details key={item.q}>
               <summary>{item.q}</summary>
               <p>{item.a}</p>
@@ -109,7 +133,7 @@ export default function HomePage() {
             },
             {
               "@type": "FAQPage",
-              mainEntity: FAQ.map((item) => ({
+              mainEntity: faq.map((item) => ({
                 "@type": "Question",
                 name: item.q,
                 acceptedAnswer: { "@type": "Answer", text: item.a },
