@@ -38,6 +38,18 @@ function describeModel(m: AiReady, backups: number): string {
   return backups > 0 ? `${name} (запасных: ${backups})` : name;
 }
 
+/**
+ * Ответ дошёл целиком, даже если соединение потом оборвалось. Последний раздел трактовки — вопрос
+ * для размышления; если он есть и дописан, посетитель получил всю трактовку. Так бывает у посредников
+ * (например, tokenator): после последнего слова они закрывают соединение, не прислав сигнал «ответ окончен».
+ */
+function looksComplete(text: string): boolean {
+  const match = text.match(/#{1,4}\s*Вопрос для размышления[^\n]*\n([\s\S]*)$/);
+  if (!match) return false;
+  const body = match[1].trim();
+  return body.length >= 15 && /[?.!…»"]$/.test(body);
+}
+
 /** Ошибки в настройках пишем в журнал сервера один раз, а не при каждом раскладе. */
 const reported = new Set<string>();
 function reportOnce(message: string) {
@@ -127,12 +139,14 @@ export async function POST(request: Request) {
           let showDemo = true;
 
           for (const [i, model] of chain.entries()) {
+            let answer = "";
             const result = await attemptModel(
               model,
               system,
               user,
               abort.signal,
               (text) => {
+                answer += text;
                 if (log) log.answer += text;
                 send({ type: "text", text });
               },
@@ -140,6 +154,17 @@ export async function POST(request: Request) {
             );
             log?.attempts.push(logAttempt(model, result));
             if (abort.signal.aborted) return;
+            // соединение оборвалось уже после последнего раздела — трактовка получена целиком
+            const deliveredAnyway = !result.ok && result.produced && looksComplete(answer);
+            if (deliveredAnyway) {
+              console.warn(
+                `[reading] ${who(model)}: соединение закрылось без сигнала «ответ окончен» (${lowerFirst(result.why)}), но трактовка пришла целиком — считаем её полученной`,
+              );
+              if (log) log.outcome = i > 0 ? "backup" : "ai";
+              settle();
+              showDemo = false;
+              break;
+            }
             if (result.ok) {
               if (i > 0) console.warn(`[reading] Ответила ${lowerFirst(who(model))}`);
               if (log) {
