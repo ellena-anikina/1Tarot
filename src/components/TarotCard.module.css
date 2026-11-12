@@ -1,0 +1,103 @@
+/*
+  Геометрия карты повторяет пропорции оригинала (≈ 100 × 171.5).
+  Всё внутри измеряется в cqi — процентах ширины карты, поэтому карта
+  выглядит одинаково и в веере, и на странице значения.
+*/
+
+.card {
+  width: var(--card-w, 160px);
+  aspect-ratio: 100 / 171.5;
+  position: relative;
+  flex: none;
+  container-type: inline-size;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  border-radius: 4.6cqi;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: var(--card-shadow);
+}
+
+.front {
+  background: var(--card-stock);
+  padding: 4.6cqi;
+}
+
+.back {
+  background: #161937 url("/card-back.svg") center / cover no-repeat;
+}
+
+.frame {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9cqi;
+  border: 0.9cqi solid var(--card-ink);
+  background: var(--card-ink);
+}
+.frame[data-reversed] {
+  transform: rotate(180deg);
+}
+
+.art {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 640 / 1054;
+  object-fit: cover;
+  background: #d9ceb7;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.caption {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding-inline: 2cqi;
+  background: var(--card-plate);
+  color: var(--card-ink);
+  font-family: var(--font-display);
+  font-size: 5.3cqi;
+  line-height: 1;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* ---------- переворачиваемая карта ---------- */
+
+.flipCard {
+  perspective: calc(var(--card-w, 160px) * 6);
+}
+
+.flipper {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.frontFlipped {
+  transform: rotateY(180deg);
+}
+
+.flipCard[data-active] .face {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    var(--card-shadow);
+}
+
+.hit {
+  position: absolute;
+  inset: 0;
+  border-radius: 4.6cqi;
+  z-index: 2;
+}
+.hit:disabled {
+  cursor: default;
+}

@@ -1,0 +1,50 @@
+.footer {
+  margin-top: 96px;
+  border-top: 1px solid var(--line);
+  padding: 48px 0 32px;
+  color: var(--text-muted);
+  font-size: 0.94rem;
+}
+
+.inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 32px 64px;
+}
+
+.about {
+  max-width: 46ch;
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.nav {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.nav a {
+  text-decoration: none;
+  color: var(--text);
+}
+.nav a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+}
+
+.fine {
+  margin-top: 40px;
+  display: grid;
+  gap: 6px;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  max-width: calc(var(--page-max));
+}
+.fine p {
+  max-width: 90ch;
+}

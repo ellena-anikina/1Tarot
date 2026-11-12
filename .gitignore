@@ -1,0 +1,23 @@
+# зависимости
+/node_modules
+
+# сборка Next.js
+/.next/
+/out/
+/build
+next-env.d.ts
+*.tsbuildinfo
+
+# секреты: файл с API-ключом никогда не попадает в git
+.env
+.env.local
+.env.*.local
+
+# журнал раскладов при локальной разработке: вопросы и ответы целиком
+/logs/
+
+# служебное
+.DS_Store
+Thumbs.db
+npm-debug.log*
+.vercel

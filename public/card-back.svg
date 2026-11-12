@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 171.5">
+  <!-- Рубашка карты. Рисунок симметричен при повороте на 180°, поэтому по рубашке нельзя угадать перевёрнутую карту. -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="75%">
+      <stop offset="0" stop-color="#272c5a"/>
+      <stop offset="1" stop-color="#161937"/>
+    </radialGradient>
+    <mask id="moonTop">
+      <rect width="100" height="171.5" fill="#fff"/>
+      <circle cx="50" cy="27.4" r="6.2" fill="#000"/>
+    </mask>
+    <mask id="moonBottom">
+      <rect width="100" height="171.5" fill="#fff"/>
+      <circle cx="50" cy="144.1" r="6.2" fill="#000"/>
+    </mask>
+  </defs>
+  <rect width="100" height="171.5" fill="url(#bg)"/>
+  <rect x="4" y="4" width="92" height="163.5" rx="1.6" fill="none" stroke="#e7b649" stroke-width=".7"/>
+  <rect x="6.6" y="6.6" width="86.8" height="158.3" rx=".8" fill="none" stroke="#ede6d6" stroke-opacity=".32" stroke-width=".35"/>
+
+  <g transform="translate(50 85.75)" fill="none" stroke-linecap="round">
+    <circle r="21.5" stroke="#e7b649" stroke-width=".7"/>
+    <circle r="18" stroke="#ede6d6" stroke-opacity=".35" stroke-width=".35"/>
+    <rect x="-11.2" y="-11.2" width="22.4" height="22.4" stroke="#ede6d6" stroke-opacity=".9" stroke-width=".55"/>
+    <rect x="-11.2" y="-11.2" width="22.4" height="22.4" transform="rotate(45)" stroke="#ede6d6" stroke-opacity=".9" stroke-width=".55"/>
+    <circle r="5.2" stroke="#e7b649" stroke-width=".5"/>
+    <circle r="2.2" fill="#e7b649" stroke="none"/>
+    <g stroke="#e7b649" stroke-width=".55" stroke-opacity=".85">
+      <path d="M0-25.5V-32M0 25.5V32M-25.5 0H-32M25.5 0H32"/>
+      <path d="M18 -18L22.6 -22.6M-18 18L-22.6 22.6M18 18L22.6 22.6M-18 -18L-22.6 -22.6"/>
+    </g>
+    <g stroke="#ede6d6" stroke-opacity=".45" stroke-width=".35">
+      <path d="M9.8-23.6L11.9-28.6M-9.8 23.6L-11.9 28.6M23.6-9.8L28.6-11.9M-23.6 9.8L-28.6 11.9"/>
+      <path d="M-9.8-23.6L-11.9-28.6M9.8 23.6L11.9 28.6M23.6 9.8L28.6 11.9M-23.6-9.8L-28.6-11.9"/>
+    </g>
+  </g>
+
+  <circle cx="50" cy="30.5" r="7" fill="#ede6d6" fill-opacity=".9" mask="url(#moonTop)"/>
+  <circle cx="50" cy="141" r="7" fill="#ede6d6" fill-opacity=".9" mask="url(#moonBottom)"/>
+
+  <g fill="#e7b649" fill-opacity=".9">
+    <path transform="translate(23 54)" d="M0-2.4L.55-.55 2.4 0 .55.55 0 2.4-.55.55-2.4 0-.55-.55Z"/>
+    <path transform="translate(77 54)" d="M0-2.4L.55-.55 2.4 0 .55.55 0 2.4-.55.55-2.4 0-.55-.55Z"/>
+    <path transform="translate(23 117.5)" d="M0-2.4L.55-.55 2.4 0 .55.55 0 2.4-.55.55-2.4 0-.55-.55Z"/>
+    <path transform="translate(77 117.5)" d="M0-2.4L.55-.55 2.4 0 .55.55 0 2.4-.55.55-2.4 0-.55-.55Z"/>
+  </g>
+  <g fill="#ede6d6" fill-opacity=".55">
+    <circle cx="50" cy="45" r=".7"/>
+    <circle cx="50" cy="126.5" r=".7"/>
+    <circle cx="36" cy="40" r=".45"/>
+    <circle cx="64" cy="40" r=".45"/>
+    <circle cx="36" cy="131.5" r=".45"/>
+    <circle cx="64" cy="131.5" r=".45"/>
+    <circle cx="15" cy="85.75" r=".55"/>
+    <circle cx="85" cy="85.75" r=".55"/>
+  </g>
+</svg>

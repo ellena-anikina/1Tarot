@@ -1,0 +1,135 @@
+.wrap {
+  padding-top: clamp(20px, 3vw, 32px);
+}
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.crumbs a {
+  color: var(--text-muted);
+}
+.crumbs a:hover {
+  color: var(--text);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 340px) minmax(0, 1fr);
+  gap: clamp(32px, 6vw, 88px);
+  margin-top: clamp(24px, 4vw, 44px);
+  align-items: start;
+}
+
+.visual {
+  position: sticky;
+  top: 96px;
+}
+
+.group {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.text h1 {
+  font-size: clamp(2.6rem, 6vw, 4.4rem);
+  line-height: 1;
+  margin-top: 8px;
+}
+
+.scene {
+  margin-top: 18px;
+  max-width: 60ch;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.28rem;
+  line-height: 1.5;
+}
+
+.keywords {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 28px;
+  margin-top: 28px;
+  padding: 18px 0;
+  border-block: 1px solid var(--line);
+  max-width: 68ch;
+}
+.keywords dt {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+.keywords dd {
+  margin: 4px 0 0;
+  font-size: 1.05rem;
+}
+
+.prose {
+  margin-top: 12px;
+}
+
+.cta {
+  margin-top: 44px;
+  padding: 26px 0 0;
+  border-top: 1px solid var(--line);
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  max-width: 68ch;
+}
+.cta p {
+  color: var(--text-muted);
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: clamp(48px, 7vw, 80px);
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.pager a {
+  display: grid;
+  gap: 2px;
+  text-decoration: none;
+  min-height: 44px;
+}
+.pagerNext {
+  text-align: right;
+}
+.pagerLabel {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+.pagerName {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+}
+.pager a:hover .pagerName {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+}
+
+@media (max-width: 760px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .visual {
+    position: static;
+    width: min(64vw, 280px);
+    margin-inline: auto;
+  }
+  .text h1 {
+    text-align: center;
+  }
+  .group {
+    text-align: center;
+  }
+  .keywords {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

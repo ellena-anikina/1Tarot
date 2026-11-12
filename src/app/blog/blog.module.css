@@ -1,0 +1,119 @@
+.wrap {
+  padding-top: clamp(32px, 5vw, 64px);
+}
+
+.head h1 {
+  font-size: clamp(2.4rem, 5.5vw, 3.8rem);
+  line-height: 1.05;
+}
+.head p {
+  margin-top: 14px;
+  max-width: 58ch;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+
+.empty {
+  margin-top: 40px;
+  color: var(--text-muted);
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin-top: clamp(32px, 5vw, 56px);
+  max-width: 760px;
+}
+
+.item {
+  padding: 26px 0;
+  border-top: 1px solid var(--line);
+}
+.item:last-child {
+  border-bottom: 1px solid var(--line);
+}
+.item h2 {
+  font-size: clamp(1.55rem, 2.8vw, 2rem);
+  line-height: 1.18;
+  margin-top: 6px;
+}
+.item h2 a {
+  text-decoration: none;
+}
+.item h2 a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 1.5px;
+}
+
+.meta {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.desc {
+  margin-top: 10px;
+  max-width: 62ch;
+  color: var(--text-muted);
+}
+
+/* ---------- статья ---------- */
+
+.crumbs {
+  font-size: 0.9rem;
+}
+.crumbs a {
+  color: var(--text-muted);
+}
+
+.postHead {
+  margin-top: 18px;
+  max-width: 24em;
+}
+.postHead h1 {
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  line-height: 1.08;
+}
+.postHead .meta {
+  margin-top: 14px;
+}
+
+.body {
+  margin-top: clamp(28px, 4vw, 44px);
+}
+
+.cta {
+  margin-top: 56px;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
+  max-width: 68ch;
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+}
+.cta p {
+  color: var(--text-muted);
+}
+
+.more {
+  margin-top: 56px;
+  max-width: 68ch;
+}
+.more h2 {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+}
+.more ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.more a {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  text-decoration-color: var(--line-strong);
+}
+.more a:hover {
+  text-decoration-color: var(--accent);
+}

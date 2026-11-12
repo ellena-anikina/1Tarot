@@ -1,0 +1,111 @@
+.below {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: clamp(48px, 6vw, 88px) clamp(40px, 6vw, 96px);
+  padding-top: clamp(56px, 8vw, 104px);
+}
+
+.below h2 {
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  margin-bottom: 18px;
+}
+
+.mirror p {
+  max-width: 60ch;
+  font-size: 1.1rem;
+  line-height: 1.72;
+}
+.mirror p + p {
+  margin-top: 1em;
+}
+.mirror a {
+  color: var(--accent-text);
+}
+
+.indexList {
+  font-family: var(--font-display);
+  font-size: 1.28rem;
+  line-height: 1.75;
+}
+.indexList a {
+  text-decoration-color: var(--line-strong);
+}
+.indexList a:hover {
+  text-decoration-color: var(--accent);
+}
+.indexMore {
+  margin-top: 16px;
+}
+.indexMore a {
+  color: var(--accent-text);
+}
+
+.posts ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 26px;
+}
+.postTitle {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  line-height: 1.25;
+  text-decoration-color: var(--line-strong);
+}
+.postTitle:hover {
+  text-decoration-color: var(--accent);
+}
+.posts li p {
+  margin-top: 6px;
+  color: var(--text-muted);
+  max-width: 58ch;
+}
+.posts .postMeta {
+  font-size: 0.86rem;
+  margin-top: 4px;
+}
+
+.faq details {
+  border-top: 1px solid var(--line);
+}
+.faq details:last-of-type {
+  border-bottom: 1px solid var(--line);
+}
+.faq summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  padding: 10px 0;
+  cursor: pointer;
+  list-style: none;
+  font-size: 1.08rem;
+  font-weight: 500;
+}
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+.faq summary::after {
+  content: "+";
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: transform var(--dur-2) var(--ease-out);
+}
+.faq details[open] summary::after {
+  transform: rotate(45deg);
+}
+.faq details p {
+  padding: 0 0 18px;
+  color: var(--text-muted);
+  max-width: 62ch;
+  line-height: 1.65;
+}
+
+@media (max-width: 860px) {
+  .below {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
