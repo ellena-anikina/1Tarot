@@ -204,8 +204,8 @@ export function ReadingTable({ deck, payments }: { deck: LiteCard[]; payments: P
     if (s.orderId && !s.proof) removePending(s.orderId);
   }
 
-  function start(spreadOverride?: SpreadId) {
-    const chosen = spreadOverride ?? spreadId;
+  function start() {
+    const chosen = spreadId;
     dropUnpaidOrder();
     resetSession();
     setResume(null);
@@ -221,7 +221,6 @@ export function ReadingTable({ deck, payments }: { deck: LiteCard[]; payments: P
       price,
       free: payments.enabled && price === 0 && chosen === FREE_SPREAD,
     };
-    if (spreadOverride) setSpreadId(spreadOverride);
     setOrder(shuffleDeck());
     setPhase("shuffle");
     if ((tableRef.current?.getBoundingClientRect().top ?? 0) < 0) scrollToTable();
@@ -615,8 +614,6 @@ export function ReadingTable({ deck, payments }: { deck: LiteCard[]; payments: P
   const dialogDrawn = dialogSlot != null && picked[dialogSlot] != null ? order[picked[dialogSlot]] : null;
   const session = sessionRef.current;
   const sessionSpread = SPREADS[session.spreadId];
-  const freeAlternative =
-    payments.enabled && session.spreadId !== FREE_SPREAD && priceOf(FREE_SPREAD, payments, freeLeft) === 0;
 
   return (
     <MotionConfig reducedMotion="user">
@@ -769,9 +766,7 @@ export function ReadingTable({ deck, payments }: { deck: LiteCard[]; payments: P
                 test={payments.test}
                 state={payState}
                 notice={payNotice}
-                freeAlternative={freeAlternative}
                 onPay={() => void pay()}
-                onFree={() => start(FREE_SPREAD)}
               />
             </div>
           )}

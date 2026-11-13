@@ -1,9 +1,10 @@
 "use client";
 
-// Экран оплаты: карты уже легли и открыты, их значения можно посмотреть бесплатно.
-// Платная часть — персональная трактовка по вопросу. Цена была видна ещё при выборе расклада.
+// Экран оплаты: карты уже легли и открыты. Платная часть — персональная трактовка по вопросу.
+// Цена была видна ещё при выборе расклада. На экране только то, что помогает решиться:
+// польза, кнопка и одна строка доверия — без ссылок, уводящих с экрана.
 
-import { SPREADS, cardsWord, type SpreadId } from "@/data/spreads";
+import { SPREADS, type SpreadId } from "@/data/spreads";
 import { formatRub } from "@/config/pricing";
 import styles from "./reading.module.css";
 
@@ -20,15 +21,10 @@ interface Props {
   state: PayState;
   /** почему снова экран оплаты: отменили, банк отклонил, не подтвердилось */
   notice: string | null;
-  /** показать бесплатную подсказку одной картой как запасной вариант */
-  freeAlternative: boolean;
   onPay: () => void;
-  onFree: () => void;
 }
 
-export function Paywall({ spreadId, amount, test, state, notice, freeAlternative, onPay, onFree }: Props) {
-  const spread = SPREADS[spreadId];
-  const n = spread.positions.length;
+export function Paywall({ spreadId, amount, test, state, notice, onPay }: Props) {
   const creating = state.status === "creating";
 
   return (
@@ -37,16 +33,9 @@ export function Paywall({ spreadId, amount, test, state, notice, freeAlternative
       <h2 id="paywall-title" className={styles.paywallTitle}>
         Персональная трактовка
       </h2>
-      <p className={styles.paywallLead}>{spread.promise}</p>
-      <ul className={styles.paywallList}>
-        <li>
-          {n === 1
-            ? "что карта говорит именно о вашем вопросе"
-            : `разбор каждой из ${n} ${cardsWord(n, ["карты", "карт", "карт"])} в её позиции — применительно к вашему вопросу`}
-        </li>
-        <li>общая картина и конкретный совет</li>
-        <li>вопрос для размышления — ответ можно записать в дневник</li>
-      </ul>
+      <p className={styles.paywallLead}>
+        {SPREADS[spreadId].promise} В конце — совет и вопрос для размышления.
+      </p>
 
       {notice && (
         <p className={styles.paywallNotice} role="status">
@@ -62,18 +51,8 @@ export function Paywall({ spreadId, amount, test, state, notice, freeAlternative
       <button type="button" className={`btn btn-primary ${styles.payButton}`} onClick={onPay} disabled={creating}>
         {creating ? "Переходим к оплате…" : `Оплатить ${formatRub(amount)}`}
       </button>
-      <p className={styles.payMeta}>СБП или банковской картой · чек придёт на почту</p>
-      <p className={styles.payMeta}>
-        Не пришла трактовка — деньги вернутся. При оплате картой сумма спишется только после трактовки.
-      </p>
+      <p className={styles.payMeta}>СБП или карта · не пришла трактовка — вернём деньги</p>
       {test && <p className={styles.payTest}>Сейчас оплата тестовая: деньги не списываются.</p>}
-
-      <p className={styles.payFree}>Значения карт — бесплатно: нажмите на карту, чтобы прочитать о ней.</p>
-      {freeAlternative && (
-        <button type="button" className={styles.payAlt} onClick={onFree}>
-          Или сделайте бесплатную подсказку одной картой
-        </button>
-      )}
     </section>
   );
 }

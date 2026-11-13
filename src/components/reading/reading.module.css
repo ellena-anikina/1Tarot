@@ -327,30 +327,6 @@
   font-size: 1.06rem;
   line-height: 1.6;
 }
-.paywallList {
-  list-style: none;
-  padding: 0;
-  margin-top: 16px;
-  display: grid;
-  gap: 6px;
-  text-align: left;
-  font-size: 0.97rem;
-  line-height: 1.5;
-}
-.paywallList li {
-  position: relative;
-  padding-left: 22px;
-}
-.paywallList li::before {
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 0.62em;
-  width: 7px;
-  height: 7px;
-  transform: rotate(45deg);
-  background: var(--accent);
-}
 .paywallNotice {
   margin-top: 18px;
   max-width: 46ch;
@@ -374,9 +350,6 @@
   line-height: 1.45;
   color: var(--text-muted);
 }
-.payMeta + .payMeta {
-  margin-top: 2px;
-}
 .payTest {
   margin-top: 10px;
   padding: 3px 10px;
@@ -385,27 +358,6 @@
   font-size: 0.82rem;
   color: var(--text-muted);
 }
-.payFree {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-  width: 100%;
-  font-size: 0.92rem;
-  color: var(--text-muted);
-}
-.payAlt {
-  margin-top: 4px;
-  min-height: 40px;
-  font-size: 0.92rem;
-  color: var(--text);
-  text-decoration: underline;
-  text-decoration-color: var(--line-strong);
-  text-underline-offset: 0.25em;
-}
-.payAlt:hover {
-  text-decoration-color: var(--text);
-}
-
 .retry {
   margin-top: 26px;
   padding: 16px 18px;
