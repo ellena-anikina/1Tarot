@@ -84,9 +84,9 @@ export function QuestionForm({
         onSubmit();
       }}
     >
-      <label htmlFor="question" id="ask-title" className={styles.ask}>
+      <h1 id="ask-title" className={styles.ask}>
         О чём вы хотите спросить карты?
-      </label>
+      </h1>
 
       <textarea
         id="question"
@@ -98,13 +98,12 @@ export function QuestionForm({
         onChange={(e) => onQuestion(e.target.value)}
         onKeyDown={onKeyDown}
         placeholder="Например: что мне важно понять о своей работе сейчас?"
-        aria-describedby="question-hint"
+        aria-labelledby="ask-title"
         autoComplete="off"
         enterKeyHint="go"
       />
       <p id="question-hint" className={styles.hint}>
-        Лучше всего работают открытые вопросы: «Что мне важно понять…», «Как мне…». Можно оставить поле пустым — карты
-        покажут, что важно сейчас.
+        Поле можно оставить пустым
       </p>
 
       <div className={styles.topics} role="group" aria-label="Готовые темы">
