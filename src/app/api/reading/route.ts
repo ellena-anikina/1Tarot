@@ -137,6 +137,9 @@ export async function POST(request: Request) {
           const user = buildUserPrompt(req);
           if (isDev) log = newReadingLog(req, system);
           let showDemo = true;
+          /** трактовка уже дописана до конца; всё, что модель пришлёт после, — задвоение, посетителю не показываем */
+          let complete = false;
+          let extra = 0;
 
           for (const [i, model] of chain.entries()) {
             let answer = "";
@@ -148,7 +151,19 @@ export async function POST(request: Request) {
               (text) => {
                 answer += text;
                 if (log) log.answer += text;
+                if (complete) {
+                  // Посредники (например, tokenator) изредка после готового ответа присылают его заново.
+                  extra += text.length;
+                  return;
+                }
                 send({ type: "text", text });
+                if (looksComplete(answer)) {
+                  complete = true;
+                  if (extra > 0) {
+                    console.warn(`[reading] ${who(model)}: после конца трактовки пришло ещё ${extra} символов — скрыто как задвоение`);
+                    extra = 0;
+                  }
+                }
               },
               { withUsage: isDev },
             );
