@@ -40,6 +40,12 @@ const FIRST_CHUNK_TIMEOUT_MS = 15_000;
 const FIRST_TEXT_TIMEOUT_MS = 40_000;
 /** Модель на своём компьютере (Ollama, LM Studio) без видеокарты начинает отвечать намного дольше. */
 const LOCAL_FIRST_CHUNK_TIMEOUT_MS = 180_000;
+/**
+ * Последней модели в очереди уступать некому: если её оборвать, посетитель получит только базовую трактовку.
+ * Поэтому её первых слов ждём дольше. Посредники вроде tokenator бывают медленными: Opus перед ответом
+ * на Кельтский крест молчал до 50 с. Укладывается в лимит функции на хостинге (maxDuration в api/reading).
+ */
+const LAST_MODEL_FIRST_TEXT_TIMEOUT_MS = 90_000;
 
 export interface AiReady {
   /** «Основная модель», «Запасная модель №1»… — для подсказок при разработке и журнала сервера */
@@ -164,5 +170,8 @@ export function getAiConfig(): AiConfig {
   if (chain[0].suffix !== "" && !problems.some((p) => p.startsWith(SLOTS[0].title))) {
     problems.unshift("Основная модель не указана (пусты AI_API_KEY и AI_PROVIDER) — отвечают запасные");
   }
+  const last = chain[chain.length - 1];
+  last.firstChunkTimeoutMs = Math.max(last.firstChunkTimeoutMs, LAST_MODEL_FIRST_TEXT_TIMEOUT_MS);
+  last.firstTextTimeoutMs = Math.max(last.firstTextTimeoutMs, LAST_MODEL_FIRST_TEXT_TIMEOUT_MS);
   return { mode: "ai", chain, problems };
 }

@@ -17,7 +17,9 @@ import { parseReadingRequest, type ReadingEvent } from "@/lib/reading-protocol";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// Медленная модель может молчать до 90 с (последняя в очереди) и ещё около минуты писать Кельтский крест.
+// На бесплатном тарифе Vercel допустимо до 300 с.
+export const maxDuration = 180;
 
 const isDev = process.env.NODE_ENV !== "production";
 

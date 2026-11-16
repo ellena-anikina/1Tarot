@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { updateJournalNote } from "@/lib/journal";
+import type { SpreadId } from "@/data/spreads";
 import { BlockView, parseReading } from "./markdown-lite";
+import { WaitingNote } from "./WaitingNote";
 import styles from "./reading.module.css";
 
 interface Props {
@@ -11,6 +13,7 @@ interface Props {
   status: "idle" | "streaming" | "done" | "error";
   notices: string[];
   mode: { mode: "ai" | "demo"; detail?: string } | null;
+  spreadId: SpreadId;
   cardCount: number;
   activeSlot: number | null;
   onActivate: (slot: number | null) => void;
@@ -44,6 +47,7 @@ export function Interpretation({
   status,
   notices,
   mode,
+  spreadId,
   cardCount,
   activeSlot,
   onActivate,
@@ -90,7 +94,7 @@ export function Interpretation({
         </p>
       )}
 
-      {!text && streaming && <p className={styles.waiting}>Карты складываются в историю…</p>}
+      {!text && streaming && <WaitingNote spreadId={spreadId} />}
 
       {sections.map((section, i) => {
         const isCard = i < cardCount && section.title !== null;

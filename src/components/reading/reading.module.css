@@ -730,13 +730,72 @@
   line-height: 1.5;
 }
 
+/* ожидание трактовки: знак на орбите и сменяющиеся фразы */
 .waiting {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px 0;
   text-align: center;
+}
+.waitingTitle {
   font-family: var(--font-display);
   font-style: italic;
   font-size: 1.25rem;
   color: var(--text-muted);
-  padding: 24px 0;
+}
+.waitingPhrase {
+  max-width: 30em;
+  /* две строки — чтобы текст ниже не прыгал, когда фраза короче */
+  min-height: 3em;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  animation: phraseIn 0.7s ease both;
+}
+@keyframes phraseIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.loader {
+  width: 68px;
+  height: 68px;
+}
+.loaderRing {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+.loaderOrbit {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: orbit 3.2s linear infinite;
+}
+.loaderStar {
+  fill: var(--accent);
+}
+.loaderCore {
+  fill: var(--accent);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: glow 1.6s ease-in-out infinite alternate;
+}
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes glow {
+  from {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .section {

@@ -783,6 +783,7 @@ export function ReadingTable({ deck, payments }: { deck: LiteCard[]; payments: P
                 status={status}
                 notices={paymentNote ? [paymentNote, ...notices] : notices}
                 mode={mode}
+                spreadId={session.spreadId}
                 cardCount={need}
                 activeSlot={activeSlot}
                 onActivate={setActiveSlot}
