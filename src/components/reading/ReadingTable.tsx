@@ -96,6 +96,8 @@ export function ReadingTable({ deck, payments }: { deck: LiteCard[]; payments: P
   const [payNotice, setPayNotice] = useState<string | null>(null);
   /** оплаченная трактовка не пришла — её можно запросить снова */
   const [retryable, setRetryable] = useState(false);
+  /** ИИ не ответил — показана базовая трактовка по значениям карт */
+  const [basic, setBasic] = useState(false);
   /** строка об оплате над трактовкой: заблокировано, оплачено, списано */
   const [paymentNote, setPaymentNote] = useState<string | null>(null);
   /** оплата картой: сумма пока только заблокирована */
@@ -193,6 +195,7 @@ export function ReadingTable({ deck, payments }: { deck: LiteCard[]; payments: P
     setPayState({ status: "idle" });
     setPayNotice(null);
     setRetryable(false);
+    setBasic(false);
     setPaymentNote(null);
     setHeld(false);
     setRelease({ status: "idle" });
@@ -379,6 +382,7 @@ export function ReadingTable({ deck, payments }: { deck: LiteCard[]; payments: P
     setMode(null);
     setSaved(false);
     setRetryable(false);
+    setBasic(false);
     setRelease({ status: "idle" });
     void requestReading(
       picked.map((i) => order[i]),
@@ -543,6 +547,7 @@ export function ReadingTable({ deck, payments }: { deck: LiteCard[]; payments: P
         else if (event.type === "fallback") {
           // ИИ не ответил — подсказку возвращаем сразу, даже если посетитель уйдёт, не дочитав базовую трактовку
           fellBack = true;
+          if (event.basic) setBasic(true);
           giveFreeBack();
         } else if (event.type === "payment") {
           const sum = formatRub(event.amount);
@@ -786,6 +791,8 @@ export function ReadingTable({ deck, payments }: { deck: LiteCard[]; payments: P
                 plainText={plainText}
                 onNewReading={newReading}
                 retryable={retryable}
+                basic={basic}
+                paid={Boolean(session.proof)}
                 onRetry={retryPaid}
                 held={held}
                 release={release}

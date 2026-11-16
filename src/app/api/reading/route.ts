@@ -9,6 +9,7 @@ import { PRICES, formatRub } from "@/config/pricing";
 import { getAiConfig, type AiReady } from "@/lib/ai/config";
 import { buildSystemPrompt, buildUserPrompt } from "@/lib/ai/prompt";
 import { attemptModel, requestedEffort } from "@/lib/ai/providers";
+import { looksComplete } from "@/lib/ai/reading-completion";
 import { buildDemoReading, streamDemo } from "@/lib/ai/demo";
 import { allowFreeReading, allowReading } from "@/lib/ai/rate-limit";
 import { appendReadingLog, describeStats, logAttempt, newReadingLog, type ReadingLogEntry } from "@/lib/ai/reading-log";
@@ -36,18 +37,6 @@ function describeModel(m: AiReady, backups: number): string {
   const name = `${m.label}, модель ${m.model}${effort ? `, глубина размышлений ${effort}` : ""}`;
   if (m.suffix) return `${lowerFirst(m.title)} — ${name}`;
   return backups > 0 ? `${name} (запасных: ${backups})` : name;
-}
-
-/**
- * Ответ дошёл целиком, даже если соединение потом оборвалось. Последний раздел трактовки — вопрос
- * для размышления; если он есть и дописан, посетитель получил всю трактовку. Так бывает у посредников
- * (например, tokenator): после последнего слова они закрывают соединение, не прислав сигнал «ответ окончен».
- */
-function looksComplete(text: string): boolean {
-  const match = text.match(/#{1,4}\s*Вопрос для размышления[^\n]*\n([\s\S]*)$/);
-  if (!match) return false;
-  const body = match[1].trim();
-  return body.length >= 15 && /[?.!…»"]$/.test(body);
 }
 
 /** Ошибки в настройках пишем в журнал сервера один раз, а не при каждом раскладе. */
@@ -208,7 +197,7 @@ export async function POST(request: Request) {
                     ? "Ответ прервался. Оплата сохранена — трактовку можно запросить ещё раз, это бесплатно."
                     : "Ответ прервался. Попробуйте сделать расклад ещё раз чуть позже.",
               });
-              send({ type: "fallback" });
+              send({ type: "fallback", basic: false });
               showDemo = false;
               break;
             }
@@ -217,15 +206,9 @@ export async function POST(request: Request) {
             // Отказ модели отвечать по существу — не технический сбой, запасной моделью его не обходим.
             if (result.refused || !next) {
               if (log) log.outcome = "demo";
-              send({
-                type: "notice",
-                text: isDev
-                  ? `${failure}. Показана базовая трактовка.`
-                  : paid
-                    ? "ИИ сейчас не ответил, поэтому ниже — базовая трактовка по значениям карт. Оплата сохранена: персональную трактовку можно запросить ещё раз — бесплатно."
-                    : "Сейчас не получилось связаться с ИИ, поэтому показана базовая трактовка по значениям карт.",
-              });
-              send({ type: "fallback" });
+              // Что ниже базовая трактовка, страница объясняет сама; причина сбоя — только при разработке.
+              if (isDev) send({ type: "notice", text: `${failure}. Показана базовая трактовка.` });
+              send({ type: "fallback", basic: true });
               break;
             }
 

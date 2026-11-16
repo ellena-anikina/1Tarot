@@ -20,6 +20,10 @@ interface Props {
   onNewReading: () => void;
   /** оплаченная трактовка не пришла — можно запросить снова, бесплатно */
   retryable: boolean;
+  /** ИИ не ответил — ниже базовая трактовка по значениям карт */
+  basic: boolean;
+  /** трактовка оплачена (и деньги не возвращены) */
+  paid: boolean;
   onRetry: () => void;
   /** оплата картой: сумма только заблокирована */
   held: boolean;
@@ -48,6 +52,8 @@ export function Interpretation({
   plainText,
   onNewReading,
   retryable,
+  basic,
+  paid,
   onRetry,
   held,
   release,
@@ -66,12 +72,23 @@ export function Interpretation({
             : "Трактовка составлена по классическим значениям карт."}
         </p>
       )}
-      {isDev && mode?.mode === "ai" && mode.detail && <p className={styles.readingMeta}>Отвечает ИИ: {mode.detail}</p>}
+      {isDev && mode?.mode === "ai" && mode.detail && !basic && (
+        <p className={styles.readingMeta}>Отвечает ИИ: {mode.detail}</p>
+      )}
       {notices.map((n, i) => (
         <p key={i} className={styles.notice} role="status">
           {n}
         </p>
       ))}
+      {basic && (
+        <p className={styles.basicNote} role="status">
+          <strong>Это базовая трактовка по классическим значениям карт</strong> — ИИ сейчас не ответил.
+          {paid &&
+            (held
+              ? " Деньги за персональную трактовку не списаны: её можно бесплатно запросить ещё раз, кнопка — внизу страницы."
+              : " Персональная трактовка оплачена: её можно бесплатно запросить ещё раз, кнопка — внизу страницы.")}
+        </p>
+      )}
 
       {!text && streaming && <p className={styles.waiting}>Карты складываются в историю…</p>}
 
@@ -118,9 +135,11 @@ export function Interpretation({
             retryable && (
               <div className={styles.retry}>
                 <p>
-                  Персональная трактовка пока не получилась.{" "}
-                  {held ? "Деньги не списаны — сумма только заблокирована." : "Оплата сохранена."} Попробуйте ещё раз — это
-                  бесплатно. Если трактовка больше не нужна, {held ? "отмените оплату" : "верните деньги"}.
+                  {basic
+                    ? held
+                      ? "Выше — базовая трактовка. Деньги за персональную не списаны — сумма только заблокирована. Запросите её ещё раз — это бесплатно. Или отмените оплату."
+                      : "Выше — базовая трактовка. Персональная трактовка оплачена: запросите её ещё раз — это бесплатно. Или верните деньги."
+                    : `Персональная трактовка пока не получилась. ${held ? "Деньги не списаны — сумма только заблокирована." : "Оплата сохранена."} Попробуйте ещё раз — это бесплатно. Если трактовка больше не нужна, ${held ? "отмените оплату" : "верните деньги"}.`}
                 </p>
                 <div className={styles.retryActions}>
                   <button type="button" className="btn btn-primary" onClick={onRetry} disabled={release.status === "working"}>

@@ -720,6 +720,15 @@
   border-left-color: var(--accent);
   color: var(--text);
 }
+/* ИИ не ответил: заметно, что ниже не персональная трактовка */
+.basicNote {
+  margin-bottom: 18px;
+  padding: 14px 18px;
+  border: 1px solid var(--chip-on-line);
+  border-radius: var(--radius);
+  background: var(--chip-on-bg);
+  line-height: 1.5;
+}
 
 .waiting {
   text-align: center;

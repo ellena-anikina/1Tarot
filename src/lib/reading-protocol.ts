@@ -22,8 +22,9 @@ export type ReadingEvent =
   | { type: "text"; text: string }
   | { type: "notice"; text: string }
   /** персональная трактовка не пришла (ИИ не ответил или ответ оборвался): оплаченную можно запросить снова,
-   *  бесплатная подсказка не засчитывается */
-  | { type: "fallback" }
+   *  бесплатная подсказка не засчитывается. basic — дальше идёт базовая трактовка по значениям карт,
+   *  пояснение об этом страница показывает сама */
+  | { type: "fallback"; basic: boolean }
   /** состояние оплаты: held — сумма заблокирована до трактовки, paid — оплачено, captured — трактовка пришла, сумма списана */
   | { type: "payment"; status: "held" | "paid" | "captured"; orderId: string; amount: number }
   | { type: "done" }
