@@ -6,6 +6,7 @@
 
 import { capturePayment, checkPayment, isFreeReading } from "@/lib/payments/server";
 import { PRICES, formatRub } from "@/config/pricing";
+import { SPREADS } from "@/data/spreads";
 import { getAiConfig, type AiReady } from "@/lib/ai/config";
 import { buildSystemPrompt, buildUserPrompt } from "@/lib/ai/prompt";
 import { attemptModel, requestedEffort } from "@/lib/ai/providers";
@@ -29,6 +30,7 @@ function clientKey(request: Request): string {
 }
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** «Основная модель (DeepSeek, модель deepseek-chat)» — для подсказок и журнала сервера. */
 const who = (m: AiReady) => `${m.title} (${m.label}, модель ${m.model})`;
@@ -132,34 +134,89 @@ export async function POST(request: Request) {
           let complete = false;
           let extra = 0;
 
+          /** Переход к следующей модели: в журнал сервера, а при разработке — и над трактовкой. */
+          const tryNext = (failure: string, next: AiReady) => {
+            console.warn(`[reading] Следующая попытка — ${lowerFirst(who(next))}`);
+            if (isDev) {
+              send({ type: "notice", text: `${failure}. Следующая попытка — ${lowerFirst(who(next))}.` });
+              send({ type: "meta", mode: "ai", detail: describeModel(next, 0) });
+            }
+          };
+
           for (const [i, model] of chain.entries()) {
             let answer = "";
+            const next = chain[i + 1];
+            // Трактовка должна начинаться с заголовка «### …». Если модель начала со вступления или жирного текста,
+            // формат сломан: раздела «Вопрос для размышления» потом, как правило, тоже нет. Когда есть запасная модель,
+            // начало ответа придерживаем, пока формат не станет ясен, а сломанный ответ отбрасываем — посетитель его не видит.
+            let held: string | null = next ? "" : null;
+            let brokenFormat = false;
+            const firstHeading = new RegExp(
+              `^#{1,4}[ \\t]+(?:\\*\\*)?(?:\\d+[.)][ \\t]*)?${escapeRegExp(SPREADS[req.spreadId].positions[0].title)}`,
+            );
+            const attempt = new AbortController();
+            const stopAttempt = () => attempt.abort();
+            abort.signal.addEventListener("abort", stopAttempt, { once: true });
+
+            const pass = (text: string) => {
+              answer += text;
+              if (log) log.answer += text;
+              if (complete) {
+                // Посредники (например, tokenator) изредка после готового ответа присылают его заново.
+                extra += text.length;
+                return;
+              }
+              send({ type: "text", text });
+              if (looksComplete(answer)) {
+                complete = true;
+                if (extra > 0) {
+                  console.warn(`[reading] ${who(model)}: после конца трактовки пришло ещё ${extra} символов — скрыто как задвоение`);
+                  extra = 0;
+                }
+              }
+            };
+
             const result = await attemptModel(
               model,
               system,
               user,
-              abort.signal,
+              attempt.signal,
               (text) => {
-                answer += text;
-                if (log) log.answer += text;
-                if (complete) {
-                  // Посредники (например, tokenator) изредка после готового ответа присылают его заново.
-                  extra += text.length;
+                if (brokenFormat) return;
+                if (held === null) return pass(text);
+                held += text;
+                const start = held.trimStart();
+                if (!start) return;
+                // Первая строка должна быть заголовком первой позиции расклада: «### Суть ситуации — …».
+                // Ждём, пока она придёт целиком; если начало не «#», ждать незачем.
+                if (start.startsWith("#") && !start.includes("\n") && start.length < 160) return;
+                if (!firstHeading.test(start)) {
+                  brokenFormat = true;
+                  attempt.abort();
                   return;
                 }
-                send({ type: "text", text });
-                if (looksComplete(answer)) {
-                  complete = true;
-                  if (extra > 0) {
-                    console.warn(`[reading] ${who(model)}: после конца трактовки пришло ещё ${extra} символов — скрыто как задвоение`);
-                    extra = 0;
-                  }
-                }
+                const out = held;
+                held = null;
+                pass(out);
               },
               { withUsage: isDev },
             );
+            abort.signal.removeEventListener("abort", stopAttempt);
+            if (abort.signal.aborted) {
+              log?.attempts.push(logAttempt(model, result));
+              return;
+            }
+            if (brokenFormat && next) {
+              const why = "Начала не с первой позиции расклада — формат трактовки не соблюдён, ответ отброшен";
+              log?.attempts.push(logAttempt(model, { ok: false, produced: false, refused: false, why, stats: result.stats }));
+              const failure = `${who(model)}: ${lowerFirst(why)}`;
+              console.warn(`[reading] ${failure}`);
+              tryNext(failure, next);
+              continue;
+            }
+            // очень короткий ответ мог целиком остаться в придержанном начале
+            if (held) pass(held);
             log?.attempts.push(logAttempt(model, result));
-            if (abort.signal.aborted) return;
             // соединение оборвалось уже после последнего раздела — трактовка получена целиком
             const deliveredAnyway = !result.ok && result.produced && looksComplete(answer);
             if (deliveredAnyway) {
@@ -204,7 +261,6 @@ export async function POST(request: Request) {
               break;
             }
 
-            const next = chain[i + 1];
             // Отказ модели отвечать по существу — не технический сбой, запасной моделью его не обходим.
             if (result.refused || !next) {
               if (log) log.outcome = "demo";
@@ -214,11 +270,7 @@ export async function POST(request: Request) {
               break;
             }
 
-            console.warn(`[reading] Следующая попытка — ${lowerFirst(who(next))}`);
-            if (isDev) {
-              send({ type: "notice", text: `${failure}. Следующая попытка — ${lowerFirst(who(next))}.` });
-              send({ type: "meta", mode: "ai", detail: describeModel(next, 0) });
-            }
+            tryNext(failure, next);
           }
 
           if (showDemo) await sendDemo();
