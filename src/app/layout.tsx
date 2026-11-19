@@ -22,7 +22,7 @@ const text = Onest({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
   title: {
-    default: `${SITE.name} — расклад Таро онлайн с вдумчивой трактовкой`,
+    default: `${SITE.name} — онлайн-расклад с вдумчивой трактовкой`,
     template: `%s — ${SITE.name}`,
   },
   description: SITE.description,

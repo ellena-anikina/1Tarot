@@ -3,7 +3,7 @@
 Расклады Таро с трактовкой от ИИ. Таро здесь — инструмент саморефлексии, а не гадание (подход в духе Biddy Tarot):
 карты помогают яснее увидеть ситуацию, а каждая трактовка заканчивается вопросом для размышления.
 
-Название «Аркана» — **рабочее**. Меняется в одном месте: `src/config/site.ts`.
+Название — «Нежное Таро», адрес — https://nezhnoetaro.ru. Оба меняются в одном месте: `src/config/site.ts`.
 
 ---
 
@@ -170,7 +170,7 @@ keywords:
 - Структурированные данные schema.org: WebSite, FAQPage, Article, BlogPosting, BreadcrumbList.
 - `sitemap.xml` и `robots.txt` (дневник и API закрыты от индексации).
 
-**При публикации:** укажите `NEXT_PUBLIC_SITE_URL` (ваш домен), добавьте сайт в Яндекс.Вебмастер и Google Search Console и отправьте `https://ваш-домен/sitemap.xml`.
+**При публикации:** адрес сайта по умолчанию — https://nezhnoetaro.ru (`src/config/site.ts`); на хостинге `NEXT_PUBLIC_SITE_URL` можно не задавать, но и не ставить туда `http://localhost:3000`. Добавьте сайт в Яндекс.Вебмастер и Google Search Console и отправьте `https://nezhnoetaro.ru/sitemap.xml`.
 
 ## Публикация
 
