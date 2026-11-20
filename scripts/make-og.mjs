@@ -45,7 +45,7 @@ const shadow = async (buf) => {
     .toBuffer();
   return sharp({ create: { width: meta.width + pad * 2, height: meta.height + pad * 2, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
     .composite([
-      { input: await sharp(black).ensureAlpha(0.55).png().toBuffer(), left: pad, top: pad + 14 },
+      { input: await sharp(black).ensureAlpha(0.3).png().toBuffer(), left: pad, top: pad + 14 },
     ])
     .blur(14)
     .composite([{ input: buf, left: pad, top: pad }])
@@ -56,15 +56,15 @@ const shadow = async (buf) => {
 const background = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
   <defs>
     <radialGradient id="g" cx="50%" cy="18%" r="85%">
-      <stop offset="0" stop-color="#262b5c"/>
-      <stop offset=".55" stop-color="#14182f"/>
-      <stop offset="1" stop-color="#0e1124"/>
+      <stop offset="0" stop-color="#fbfaf7"/>
+      <stop offset=".55" stop-color="#f1f0ec"/>
+      <stop offset="1" stop-color="#e5e3dc"/>
     </radialGradient>
   </defs>
   <rect width="100%" height="100%" fill="url(#g)"/>
-  <text x="${W / 2}" y="574" font-family="Georgia, 'Times New Roman', serif" font-size="40" fill="#ede6d6"
+  <text x="${W / 2}" y="574" font-family="Georgia, 'Times New Roman', serif" font-size="40" fill="#1b1c2e"
     text-anchor="middle">Расклады Таро для размышлений</text>
-  <rect x="${W / 2 - 28}" y="596" width="56" height="2" fill="#e7b649"/>
+  <rect x="${W / 2 - 28}" y="596" width="56" height="2" fill="#c9951f"/>
 </svg>`);
 
 const [moon, star, sun] = await Promise.all([card("luna", "Луна"), card("zvezda", "Звезда"), card("solntse", "Солнце")]);

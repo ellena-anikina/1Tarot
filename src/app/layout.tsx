@@ -40,21 +40,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#12152b" },
-    { media: "(prefers-color-scheme: light)", color: "#efeeea" },
-  ],
+  themeColor: "#efeeea",
 };
-
-// Тема ставится до отрисовки, чтобы не было вспышки другой темы.
-const themeScript = `(function(){try{var t=localStorage.getItem('tarot.theme');document.documentElement.dataset.theme=(t==='paper'?'paper':'night');}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" data-theme="night" className={`${display.variable} ${text.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
+    <html lang="ru" className={`${display.variable} ${text.variable}`}>
       <body>
         <SiteHeader />
         <main id="main">{children}</main>

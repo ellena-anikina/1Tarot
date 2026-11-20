@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { SITE } from "@/config/site";
 import { NavLinks } from "./NavLinks";
-import { ThemeToggle } from "./ThemeToggle";
 import styles from "./SiteHeader.module.css";
 
 export function SiteHeader() {
@@ -22,7 +21,6 @@ export function SiteHeader() {
         </Link>
         <div className={styles.right}>
           <NavLinks />
-          <ThemeToggle />
         </div>
       </div>
     </header>

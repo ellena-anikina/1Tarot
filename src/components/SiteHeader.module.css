@@ -98,29 +98,6 @@
   text-underline-offset: 0.45em;
 }
 
-.theme {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  color: var(--text-muted);
-  font-size: 0.875rem;
-  transition:
-    color var(--dur-2) var(--ease-out),
-    border-color var(--dur-2) var(--ease-out);
-}
-.theme:hover {
-  color: var(--text);
-  border-color: var(--line-strong);
-}
-.themeIcon {
-  width: 18px;
-  height: 18px;
-}
-
 .navNarrow {
   display: none;
   position: relative;
@@ -166,11 +143,5 @@
   }
   .navNarrow {
     display: block;
-  }
-  .themeName {
-    display: none;
-  }
-  .theme {
-    padding: 0 10px;
   }
 }

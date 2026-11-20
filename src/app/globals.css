@@ -1,7 +1,7 @@
 /*
   Дизайн-токены и базовые стили.
-  Две темы для сравнения: «Ночной бархат» (night) и «Светлая бумага» (paper).
-  Когда выберете одну — удалите блок другой и переключатель темы в шапке.
+  Одна светлая тема «Светлая бумага» (решено 20.11.2026): сайт о саморефлексии,
+  а тёмно-синий с золотом читается как эзотерика. Тёмную тему и переключатель убрали.
 */
 
 @layer reset, base, utilities;
@@ -58,40 +58,14 @@
   --gutter: clamp(16px, 4vw, 40px);
   --page-max: 1180px;
 
-  /* бумага карт и печатная краска — одинаковы в обеих темах: колода — физический предмет */
+  /* бумага карт и печатная краска: колода — физический предмет */
   --card-stock: #efe6d2;
   --card-plate: #e3d9c5;
   --card-ink: #1b1712;
 }
 
-/* ---------- Ночной бархат ---------- */
-:root,
-:root[data-theme="night"] {
-  color-scheme: dark;
-  --bg: #12152b;
-  --bg-raised: #1a1e3a;
-  --bg-sunken: #0d1023;
-  --text: #ede6d6;
-  --text-muted: #a3a1b8;
-  --line: rgba(237, 230, 214, 0.13);
-  --line-strong: rgba(237, 230, 214, 0.26);
-  --accent: #e7b649;
-  --accent-text: #f0cd78;
-  --cta-bg: #e7b649;
-  --cta-bg-hover: #f0c35e;
-  --cta-text: #15172c;
-  --chip-on-bg: rgba(231, 182, 73, 0.15);
-  --chip-on-text: #f3d68f;
-  --chip-on-line: rgba(231, 182, 73, 0.7);
-  --focus: #e7b649;
-  --table: radial-gradient(110% 70% at 50% 0%, #1e2347 0%, #14182f 52%, #12152b 100%);
-  --card-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.4);
-  --slot-line: rgba(237, 230, 214, 0.18);
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
 /* ---------- Светлая бумага ---------- */
-:root[data-theme="paper"] {
+:root {
   color-scheme: light;
   --bg: #efeeea;
   --bg-raised: #f8f7f3;
