@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-import { SITE } from "@/config/site";
-import { CARDS } from "@/data/cards";
+import { SITE } from "@/config/site";import { CARDS } from "@/data/cards";
 import { getAllPosts } from "@/lib/blog";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -22,6 +21,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(p.updated ?? p.date),
       changeFrequency: "monthly" as const,
       priority: 0.6,
-    })),
-  ];
+    })),  ];
 }

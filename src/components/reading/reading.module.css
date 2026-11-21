@@ -350,6 +350,19 @@
   line-height: 1.45;
   color: var(--text-muted);
 }
+.payOffer {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.payOffer a {
+  color: inherit;
+  text-decoration-color: var(--line-strong);
+}
+.payOffer a:hover {
+  text-decoration-color: var(--accent);
+}
 .payTest {
   margin-top: 10px;
   padding: 3px 10px;
