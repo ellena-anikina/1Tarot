@@ -19,6 +19,7 @@ export function SiteFooter() {
           <Link href="/blog">Блог</Link>
           <Link href="/dnevnik">Дневник раскладов</Link>
           <Link href="/oferta">Публичная оферта</Link>
+          <Link href="/privacy">Политика конфиденциальности</Link>
         </nav>
       </div>
       <div className={`page ${styles.fine}`}>
