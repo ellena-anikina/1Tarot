@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SITE } from "@/config/site";
+import { SELLER } from "@/config/seller";
 import styles from "./SiteFooter.module.css";
 
 export function SiteFooter() {
@@ -23,6 +24,10 @@ export function SiteFooter() {
           <p className={styles.navTitle}>Правовая информация</p>
           <Link href="/oferta">Публичная оферта</Link>
           <Link href="/privacy">Политика конфиденциальности</Link>
+          <div className={styles.seller}>
+            <p>Самозанятая {SELLER.fullName}</p>
+            <p>ИНН {SELLER.inn}</p>
+          </div>
         </nav>
       </div>
       <div className={`page ${styles.fine}`}>

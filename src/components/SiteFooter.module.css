@@ -33,6 +33,19 @@
   color: var(--text-muted);
   font-size: 0.82rem;
 }
+.seller {
+  display: grid;
+  gap: 3px;
+  margin-top: 14px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line-strong);
+  color: var(--text-muted);
+  line-height: 1.45;
+  font-size: 0.82rem;
+}
+.seller p:last-child {
+  font-variant-numeric: tabular-nums;
+}
 .nav a {
   text-decoration: none;
   color: var(--text);
