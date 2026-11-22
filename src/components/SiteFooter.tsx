@@ -18,6 +18,9 @@ export function SiteFooter() {
           <Link href="/karty">Значения карт</Link>
           <Link href="/blog">Блог</Link>
           <Link href="/dnevnik">Дневник раскладов</Link>
+        </nav>
+        <nav className={styles.nav} aria-label="Правовая информация">
+          <p className={styles.navTitle}>Правовая информация</p>
           <Link href="/oferta">Публичная оферта</Link>
           <Link href="/privacy">Политика конфиденциальности</Link>
         </nav>

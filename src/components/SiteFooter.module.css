@@ -28,6 +28,11 @@
   gap: 6px;
   align-content: start;
 }
+.navTitle {
+  margin-bottom: 2px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
 .nav a {
   text-decoration: none;
   color: var(--text);
