@@ -19,7 +19,7 @@ export const SELLER = {
 };
 
 /** Редакция оферты: дата, с которой действует текущий текст. Меняйте при каждой правке условий. */
-export const OFFER_DATE = "2026-11-21";
+export const OFFER_DATE = "2026-11-23";
 
 /** Заполнены ли обязательные реквизиты: без них оферта не годится для подключения оплаты. */
 export const sellerReady = (): boolean => Boolean(SELLER.fullName && SELLER.inn && SELLER.email);
