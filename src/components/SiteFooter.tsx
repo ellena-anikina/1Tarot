@@ -27,6 +27,7 @@ export function SiteFooter() {
           <div className={styles.seller}>
             <p>Самозанятая {SELLER.fullName}</p>
             <p>ИНН {SELLER.inn}</p>
+            <p>{SELLER.email}</p>
           </div>
         </nav>
       </div>
