@@ -12,6 +12,7 @@ next-env.d.ts
 .env
 .env.local
 .env.*.local
+variables.env
 
 # журнал раскладов при локальной разработке: вопросы и ответы целиком
 /logs/
